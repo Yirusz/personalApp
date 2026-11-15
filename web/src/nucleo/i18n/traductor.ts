@@ -3,6 +3,8 @@
  * Las fechas se guardan en UTC y solo se convierten a la zona del usuario al mostrarlas.
  */
 
+import { crearZona, esFechaCivil } from '../dominio/zona-horaria';
+
 export type Parametros = Readonly<Record<string, string | number>>;
 export type Traductor = (clave: string, parametros?: Parametros) => string;
 
@@ -76,31 +78,13 @@ export function crearFormatos(zona: string = ZONA_HORARIA): Formatos {
   const relativo = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
   // en-CA produce AAAA-MM-DD; solo se usa como formato técnico, no se muestra.
   const dia = new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' });
-  // Partes numéricas en la zona, para convertir entre hora local y UTC sin depender de la zona del dispositivo.
-  const partes = new Intl.DateTimeFormat('en-US', {
-    timeZone: zona,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  const civil = crearZona(zona);
   const aFecha = (v: Date | string) => (v instanceof Date ? v : new Date(v));
-
-  /** Componentes de calendario en la zona, como si fueran UTC (ms). */
-  const comoUtc = (ms: number): number => {
-    const p: Record<string, number> = {};
-    for (const { type, value } of partes.formatToParts(new Date(ms))) p[type] = Number(value);
-    return Date.UTC(p.year!, p.month! - 1, p.day!, p.hour!, p.minute!, p.second!);
-  };
-  /** Desfase de la zona respecto a UTC en ese instante (ms; Bogotá = −5 h). */
-  const desfase = (ms: number): number => comoUtc(ms) - Math.floor(ms / 1000) * 1000;
+  const dosDigitos = (n: number) => String(n).padStart(2, '0');
 
   const entradaLocal = (v: Date | string): string => {
-    const local = new Date(comoUtc(aFecha(v).getTime()));
-    return local.toISOString().slice(0, 16);
+    const { fecha: f, minutos } = civil.aCivil(aFecha(v).getTime());
+    return `${f}T${dosDigitos(Math.floor(minutos / 60))}:${dosDigitos(minutos % 60)}`;
   };
 
   return {
@@ -113,14 +97,12 @@ export function crearFormatos(zona: string = ZONA_HORARIA): Formatos {
     desdeEntradaLocal(valor) {
       const m = PATRON_ENTRADA_LOCAL.exec(valor);
       if (!m) return null;
-      const [a, mes, d, h, min, s] = m.slice(1).map((x) => Number(x ?? 0)) as [number, number, number, number, number, number];
-      const supuesto = Date.UTC(a, mes - 1, d, h, min, s);
-      // Dos pasadas: el desfase se evalúa cerca del instante real (cambios de horario de verano).
-      let ms = supuesto - desfase(supuesto);
-      ms = supuesto - desfase(ms);
-      // Rechaza fechas imposibles (30 de febrero, 25:00) y horas inexistentes por cambio de horario.
-      const normal = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
-      if (Number.isNaN(ms) || entradaLocal(new Date(ms)) !== normal) return null;
+      const fechaCivil = `${m[1]}-${m[2]}-${m[3]}`;
+      const [h, min, seg] = [Number(m[4]), Number(m[5]), Number(m[6] ?? 0)];
+      if (!esFechaCivil(fechaCivil) || h > 23 || min > 59 || seg > 59) return null;
+      const ms = civil.aUtc(fechaCivil, h * 60 + min) + seg * 1000;
+      // Rechaza horas inexistentes por cambio de horario (la conversión las corre).
+      if (entradaLocal(new Date(ms)) !== `${fechaCivil}T${m[4]}:${m[5]}`) return null;
       return new Date(ms).toISOString();
     },
     relativo(v, ahora) {

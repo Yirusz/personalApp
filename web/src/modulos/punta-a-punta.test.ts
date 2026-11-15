@@ -11,6 +11,7 @@ import { registrar } from './ejemplo/aplicacion/registrar';
 import { RegistroInvalido } from './ejemplo/dominio/registro';
 import ejemplo from './ejemplo/modulo';
 import { leerPerfil, leerUltimosAsientos } from './rpg/aplicacion/registrar-experiencia';
+import { notificadorNulo } from '../nucleo/infraestructura/notificaciones';
 import rpg from './rpg/modulo';
 import { completarEntregable } from './universidad/aplicacion/completar-entregable';
 import { crearMateria } from './universidad/aplicacion/crear-materia';
@@ -29,6 +30,7 @@ function contexto(e: Entorno, moduloId: string): ContextoDeModulo {
     t: crearTraductor({}),
     formatos,
     diagnostico: e.diagnostico,
+    notificaciones: notificadorNulo,
     navegar: () => undefined,
   };
 }

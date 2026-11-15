@@ -89,6 +89,20 @@ export interface Diagnostico {
   registrar(nivel: 'error' | 'aviso' | 'info', origen: string, mensaje: string, detalle?: unknown): void;
 }
 
+export type PermisoDeNotificaciones = 'concedido' | 'denegado' | 'preguntar' | 'no-soportado';
+
+/**
+ * Puerto de notificaciones del sistema. En una PWA solo funcionan con la app
+ * abierta (ADR-0004); un empaquetado nativo (Tauri) daría otro adaptador.
+ */
+export interface Notificador {
+  permiso(): PermisoDeNotificaciones;
+  /** Debe llamarse desde un gesto del usuario (clic). */
+  pedirPermiso(): Promise<PermisoDeNotificaciones>;
+  /** Devuelve `false` si no se pudo mostrar (sin permiso o sin soporte); nunca lanza. */
+  mostrar(aviso: { titulo: string; cuerpo?: string; etiqueta?: string }): Promise<boolean>;
+}
+
 export interface ContextoDeModulo {
   readonly moduloId: string;
   readonly almacen: AlmacenDeModulo;
@@ -98,6 +112,7 @@ export interface ContextoDeModulo {
   readonly t: Traductor;
   readonly formatos: Formatos;
   readonly diagnostico: Diagnostico;
+  readonly notificaciones: Notificador;
   navegar(ruta: string): void;
 }
 
@@ -150,6 +165,12 @@ export interface DefinicionDeModulo {
   eventos: Readonly<Record<string, DeclaracionDeEvento>>;
   suscripciones?: (ctx: ContextoDeModulo) => readonly Suscripcion[];
   tarjetasDeInicio?: readonly TarjetaDeInicio[];
+  /**
+   * Tarea que corre mientras la app está abierta, en cualquier pantalla (p. ej.
+   * recordatorios o el fin de un Pomodoro). Se inicia tras el arranque; devuelve
+   * la función que la detiene. Debe ser liviana y tolerar ser congelada (Android).
+   */
+  alIniciar?: (ctx: ContextoDeModulo) => () => void;
 }
 
 /** Ayuda de tipos para declarar un módulo. */
