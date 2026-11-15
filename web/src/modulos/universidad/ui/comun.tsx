@@ -5,7 +5,7 @@ import type { ContextoDeModulo } from '../../../nucleo/contrato';
 import type { Traductor } from '../../../nucleo/i18n/traductor';
 import { hrefDe } from '../../../ui/enrutador';
 import { completarEntregable } from '../aplicacion/completar-entregable';
-import { estaVencido, PRIORIDADES, TALLAS, TIPOS, TITULO_MAX, type Entregable, type Prioridad, type Talla, type TipoDeEntregable } from '../dominio/entregable';
+import { estaVencido, PRIORIDADES, TALLAS, TIPOS, titulo as tituloValido, TITULO_MAX, type Entregable, type Prioridad, type Talla, type TipoDeEntregable } from '../dominio/entregable';
 import { ErrorDeUniversidad, type CampoDeFormulario } from '../dominio/errores';
 import type { Materia } from '../dominio/materia';
 
@@ -60,6 +60,48 @@ export function ErrorDeCampo({ campo, error }: { campo: string; error: string | 
       {error}
     </span>
   ) : null;
+}
+
+export function idDeControl(campo: string): string {
+  return `universidad-${campo}`;
+}
+
+/**
+ * Campo con etiqueta, ayuda y error separados: el nombre accesible es solo la
+ * etiqueta; la ayuda y el error se asocian con aria-describedby (ver `aria`).
+ * El control hijo debe llevar `id={idDeControl(campo)}`.
+ */
+export function Campo({
+  campo,
+  etiqueta,
+  ayuda,
+  error,
+  children,
+  despues,
+  clase = 'campo',
+}: {
+  campo: string;
+  etiqueta: string;
+  ayuda?: ComponentChildren;
+  error?: string;
+  children: ComponentChildren;
+  /** Contenido extra bajo la ayuda (p. ej. una advertencia). */
+  despues?: ComponentChildren;
+  clase?: string;
+}) {
+  return (
+    <div class={clase}>
+      <label for={idDeControl(campo)}>{etiqueta}</label>
+      {children}
+      {ayuda && (
+        <span id={idDeAyuda(campo)} class="campo__ayuda">
+          {ayuda}
+        </span>
+      )}
+      {despues}
+      <ErrorDeCampo campo={campo} error={error} />
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -153,6 +195,27 @@ export interface BorradorDeEntregable {
   talla: Talla;
 }
 
+/**
+ * Revisa el borrador completo antes de llamar al caso de uso, para señalar
+ * TODOS los campos con problemas a la vez (el dominio vuelve a validar).
+ */
+export function validarBorrador(
+  ctx: ContextoDeModulo,
+  b: BorradorDeEntregable,
+  opciones: { conMateria: boolean; fechaBloqueada?: boolean },
+): { errores: ErroresDeCampo; venceEn: string | null } {
+  const errores: ErroresDeCampo = {};
+  if (opciones.conMateria && !b.materiaId) errores.materia = ctx.t('universidad.error.materiaNoEncontrada');
+  try {
+    tituloValido(b.titulo);
+  } catch (error) {
+    errores.titulo = mensajeDeError(ctx.t, error);
+  }
+  const venceEn = ctx.formatos.desdeEntradaLocal(b.venceEnLocal);
+  if (!opciones.fechaBloqueada && !venceEn) errores.venceEn = ctx.t('universidad.error.fecha');
+  return { errores, venceEn };
+}
+
 export const BORRADOR_VACIO: BorradorDeEntregable = { materiaId: '', titulo: '', tipo: 'tarea', venceEnLocal: '', prioridad: 'media', talla: 'M' };
 
 function GrupoDeOpciones<T extends string>({
@@ -221,9 +284,13 @@ export function CamposDeEntregable({
   return (
     <>
       {materias && (
-        <label class="campo">
-          <span>{t('universidad.campo.materia')}</span>
-          <select value={borrador.materiaId} onChange={(e) => cambiar({ materiaId: valor(e) })} {...aria('materia', errores.materia)}>
+        <Campo campo="materia" etiqueta={t('universidad.campo.materia')} error={errores.materia}>
+          <select
+            id={idDeControl('materia')}
+            value={borrador.materiaId}
+            onChange={(e) => cambiar({ materiaId: valor(e) })}
+            {...aria('materia', errores.materia)}
+          >
             <option value="">{t('universidad.campo.elegirMateria')}</option>
             {materias.map((m) => (
               <option key={m.id} value={m.id}>
@@ -231,51 +298,52 @@ export function CamposDeEntregable({
               </option>
             ))}
           </select>
-          <ErrorDeCampo campo="materia" error={errores.materia} />
-        </label>
+        </Campo>
       )}
 
-      <label class="campo">
-        <span>{t('universidad.campo.titulo')}</span>
+      <Campo campo="titulo" etiqueta={t('universidad.campo.titulo')} ayuda={t('universidad.campo.tituloAyuda', { max: TITULO_MAX })} error={errores.titulo}>
         <input
+          id={idDeControl('titulo')}
           value={borrador.titulo}
           maxLength={TITULO_MAX}
           autoComplete="off"
           onInput={(e) => cambiar({ titulo: valor(e) })}
           {...aria('titulo', errores.titulo, true)}
         />
-        <span id={idDeAyuda('titulo')} class="campo__ayuda">
-          {t('universidad.campo.tituloAyuda', { max: TITULO_MAX })}
-        </span>
-        <ErrorDeCampo campo="titulo" error={errores.titulo} />
-      </label>
+      </Campo>
 
-      <label class="campo">
-        <span>{t('universidad.campo.tipo')}</span>
-        <select value={borrador.tipo} onChange={(e) => cambiar({ tipo: valor(e) as TipoDeEntregable })}>
+      <Campo campo="tipo" etiqueta={t('universidad.campo.tipo')}>
+        <select id={idDeControl('tipo')} value={borrador.tipo} onChange={(e) => cambiar({ tipo: valor(e) as TipoDeEntregable })}>
           {TIPOS.map((tipo) => (
             <option key={tipo} value={tipo}>
               {t(`universidad.tipo.${tipo}`)}
             </option>
           ))}
         </select>
-      </label>
+      </Campo>
 
-      <label class="campo">
-        <span>{t('universidad.campo.venceEn')}</span>
+      <Campo
+        campo="venceEn"
+        etiqueta={t('universidad.campo.venceEn')}
+        ayuda={fechaBloqueada ? t('universidad.campo.venceEnBloqueada') : t('universidad.campo.venceEnAyuda')}
+        error={errores.venceEn}
+        despues={
+          fechaPasada && (
+            <span class="aviso aviso--alerta" role="status">
+              {t('universidad.campo.fechaPasada')}
+            </span>
+          )
+        }
+      >
         <input
+          id={idDeControl('venceEn')}
           type="datetime-local"
           value={borrador.venceEnLocal}
           disabled={fechaBloqueada}
           onInput={(e) => cambiar({ venceEnLocal: valor(e) })}
           {...aria('venceEn', errores.venceEn, true)}
         />
-        <span id={idDeAyuda('venceEn')} class="campo__ayuda">
-          {fechaBloqueada ? t('universidad.campo.venceEnBloqueada') : t('universidad.campo.venceEnAyuda')}
-        </span>
-        {fechaPasada && <span class="aviso aviso--alerta">{t('universidad.campo.fechaPasada')}</span>}
-        <ErrorDeCampo campo="venceEn" error={errores.venceEn} />
-      </label>
+      </Campo>
 
       <GrupoDeOpciones
         nombre="prioridad"

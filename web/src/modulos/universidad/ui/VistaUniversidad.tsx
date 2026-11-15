@@ -9,7 +9,7 @@ import { ENTREGABLES, MATERIAS } from '../aplicacion/comun';
 import { leerPanel } from '../aplicacion/consultas';
 import { FILTRO_INICIAL, FILTROS_DE_ESTADO, HORAS_PROXIMOS, filtrarEntregables, proximosVencimientos, type FiltroDeEntregables, type FiltroDeEstado } from '../dominio/consultas';
 import { guardarFiltro, leerFiltro } from '../infraestructura/preferencias';
-import { ItemEntregable, LineaDeAviso, type Aviso } from './comun';
+import { Campo, idDeControl, ItemEntregable, LineaDeAviso, type Aviso } from './comun';
 
 export function VistaUniversidad({ ctx }: PropsDeVista) {
   const { t } = ctx;
@@ -91,9 +91,9 @@ export function VistaUniversidad({ ctx }: PropsDeVista) {
         ) : (
           <>
             <div class="filtros">
-              <label class="campo">
-                <span>{t('universidad.filtroMateria')}</span>
+              <Campo campo="filtro-materia" etiqueta={t('universidad.filtroMateria')}>
                 <select
+                  id={idDeControl('filtro-materia')}
                   value={d.efectivo.materiaId ?? ''}
                   onChange={(e) => setFiltro({ ...filtro, materiaId: (e.currentTarget as HTMLSelectElement).value || null })}
                 >
@@ -104,10 +104,10 @@ export function VistaUniversidad({ ctx }: PropsDeVista) {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label class="campo">
-                <span>{t('universidad.filtroEstado')}</span>
+              </Campo>
+              <Campo campo="filtro-estado" etiqueta={t('universidad.filtroEstado')}>
                 <select
+                  id={idDeControl('filtro-estado')}
                   value={d.efectivo.estado}
                   onChange={(e) => setFiltro({ ...filtro, estado: (e.currentTarget as HTMLSelectElement).value as FiltroDeEstado })}
                 >
@@ -117,7 +117,7 @@ export function VistaUniversidad({ ctx }: PropsDeVista) {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Campo>
             </div>
             {d.lista.length === 0 ? (
               <div class="pila">

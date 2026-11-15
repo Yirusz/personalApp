@@ -13,7 +13,7 @@ import { renombrarMateria } from '../aplicacion/renombrar-materia';
 import { restaurarMateria } from '../aplicacion/restaurar-materia';
 import { CreditosInvalidos } from '../dominio/errores';
 import { COLORES_DE_MATERIA, CREDITOS_MAX, NOMBRE_MAX, type ColorDeMateria, type Materia } from '../dominio/materia';
-import { aria, enfocarPrimerError, ErrorDeCampo, idDeAyuda, LineaDeAviso, mensajeDeError, repartirError, type Aviso, type ErroresDeCampo } from './comun';
+import { aria, Campo, enfocarPrimerError, ErrorDeCampo, idDeControl, LineaDeAviso, mensajeDeError, repartirError, type Aviso, type ErroresDeCampo } from './comun';
 
 export function VistaMaterias({ ctx }: PropsDeVista) {
   const { t } = ctx;
@@ -135,9 +135,9 @@ function FormularioDeMateria({ ctx }: { ctx: ContextoDeModulo }) {
   return (
     <form ref={formulario} class="tarjeta" onSubmit={enviar} noValidate>
       <h2 class="tarjeta__titulo">{t('universidad.nuevaMateria')}</h2>
-      <label class="campo">
-        <span>{t('universidad.campo.nombre')}</span>
+      <Campo campo="nombre" etiqueta={t('universidad.campo.nombre')} ayuda={t('universidad.campo.nombreAyuda', { max: NOMBRE_MAX })} error={errores.nombre}>
         <input
+          id={idDeControl('nombre')}
           value={nombre}
           maxLength={NOMBRE_MAX}
           autoComplete="off"
@@ -147,11 +147,7 @@ function FormularioDeMateria({ ctx }: { ctx: ContextoDeModulo }) {
           }}
           {...aria('nombre', errores.nombre, true)}
         />
-        <span id={idDeAyuda('nombre')} class="campo__ayuda">
-          {t('universidad.campo.nombreAyuda', { max: NOMBRE_MAX })}
-        </span>
-        <ErrorDeCampo campo="nombre" error={errores.nombre} />
-      </label>
+      </Campo>
 
       <fieldset class="grupo grupo--en-linea" {...aria('color', errores.color)}>
         <legend>{t('universidad.campo.color')}</legend>
@@ -165,9 +161,9 @@ function FormularioDeMateria({ ctx }: { ctx: ContextoDeModulo }) {
         <ErrorDeCampo campo="color" error={errores.color} />
       </fieldset>
 
-      <label class="campo">
-        <span>{t('universidad.campo.creditos')}</span>
+      <Campo campo="creditos" etiqueta={t('universidad.campo.creditos')} error={errores.creditos}>
         <input
+          id={idDeControl('creditos')}
           type="number"
           inputMode="numeric"
           min={0}
@@ -180,8 +176,7 @@ function FormularioDeMateria({ ctx }: { ctx: ContextoDeModulo }) {
           }}
           {...aria('creditos', errores.creditos)}
         />
-        <ErrorDeCampo campo="creditos" error={errores.creditos} />
-      </label>
+      </Campo>
 
       <div class="acciones">
         <button type="submit" class="boton boton--primario" disabled={guardando}>
@@ -227,9 +222,9 @@ function FilaDeMateria({ ctx, materia: m, pendientes, alArchivar }: { ctx: Conte
     <li class="lista__item" data-color={m.color}>
       {editando ? (
         <form class="fila" onSubmit={guardar} noValidate>
-          <label class="campo fila__principal">
-            <span>{t('universidad.renombrarTitulo', { nombre: m.nombre })}</span>
+          <Campo campo={idCampo} etiqueta={t('universidad.renombrarTitulo', { nombre: m.nombre })} error={error} clase="campo fila__principal">
             <input
+              id={idDeControl(idCampo)}
               ref={campo}
               value={nombre}
               maxLength={NOMBRE_MAX}
@@ -243,8 +238,7 @@ function FilaDeMateria({ ctx, materia: m, pendientes, alArchivar }: { ctx: Conte
               }}
               {...aria(idCampo, error)}
             />
-            <ErrorDeCampo campo={idCampo} error={error} />
-          </label>
+          </Campo>
           <span class="acciones">
             <button type="submit" class="boton boton--primario">
               {t('universidad.guardar')}

@@ -14,7 +14,6 @@ import { iniciarEntregable } from '../aplicacion/iniciar-entregable';
 import { reabrirEntregable } from '../aplicacion/reabrir-entregable';
 import { reprogramarEntregable } from '../aplicacion/reprogramar-entregable';
 import { estaVencido, type Entregable } from '../dominio/entregable';
-import { FechaInvalida } from '../dominio/errores';
 import type { Materia } from '../dominio/materia';
 import {
   CamposDeEntregable,
@@ -25,6 +24,7 @@ import {
   type Aviso,
   type BorradorDeEntregable,
   type ErroresDeCampo,
+  validarBorrador,
 } from './comun';
 
 export function VistaEntregable({ ctx, params }: PropsDeVista) {
@@ -89,9 +89,13 @@ function Detalle({ ctx, entregable: e, materia }: { ctx: ContextoDeModulo; entre
     setOcupado(true);
     setAviso(null);
     try {
-      const venceEn = completado ? e.venceEn : formatos.desdeEntradaLocal(borrador.venceEnLocal);
-      if (!venceEn) throw new FechaInvalida('Fecha vacía o inválida');
-      // Primero se valida todo lo que puede fallar por datos (título, talla); luego la fecha.
+      const revision = validarBorrador(ctx, borrador, { conMateria: false, fechaBloqueada: completado });
+      if (Object.keys(revision.errores).length > 0) {
+        setErrores(revision.errores);
+        enfocarPrimerError(formulario.current);
+        return;
+      }
+      const venceEn = completado ? e.venceEn : revision.venceEn!;
       await editarEntregable(ctx, e.id, { titulo: borrador.titulo, tipo: borrador.tipo, prioridad: borrador.prioridad, talla: borrador.talla });
       if (!completado) await reprogramarEntregable(ctx, e.id, venceEn);
       setErrores({});

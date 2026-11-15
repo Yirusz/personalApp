@@ -7,8 +7,7 @@ import { useConsulta } from '../../../ui/servicios';
 import { MATERIAS } from '../aplicacion/comun';
 import { leerMaterias } from '../aplicacion/consultas';
 import { registrarEntregable } from '../aplicacion/registrar-entregable';
-import { FechaInvalida } from '../dominio/errores';
-import { BORRADOR_VACIO, CamposDeEntregable, enfocarPrimerError, LineaDeAviso, repartirError, type Aviso, type BorradorDeEntregable, type ErroresDeCampo } from './comun';
+import { BORRADOR_VACIO, CamposDeEntregable, enfocarPrimerError, LineaDeAviso, repartirError, validarBorrador, type Aviso, type BorradorDeEntregable, type ErroresDeCampo } from './comun';
 
 export function VistaNuevoEntregable({ ctx }: PropsDeVista) {
   const { t } = ctx;
@@ -50,9 +49,13 @@ export function VistaNuevoEntregable({ ctx }: PropsDeVista) {
     setGuardando(true);
     setAviso(null);
     try {
-      const venceEn = ctx.formatos.desdeEntradaLocal(borrador.venceEnLocal);
-      if (!venceEn) throw new FechaInvalida('Fecha vacía o inválida');
-      await registrarEntregable(ctx, { ...borrador, materiaId: elegida, venceEn });
+      const revision = validarBorrador(ctx, { ...borrador, materiaId: elegida }, { conMateria: true });
+      if (Object.keys(revision.errores).length > 0 || !revision.venceEn) {
+        setErrores(revision.errores);
+        enfocarPrimerError(formulario.current);
+        return;
+      }
+      await registrarEntregable(ctx, { ...borrador, materiaId: elegida, venceEn: revision.venceEn });
       // Se conserva la materia para registrar varios seguidos.
       setBorrador({ ...BORRADOR_VACIO, materiaId: elegida });
       setErrores({});

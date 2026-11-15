@@ -274,6 +274,7 @@ a {
 .acciones {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--espacio-2);
 }
 
