@@ -435,3 +435,80 @@ a {
     inset: auto var(--espacio-6) var(--espacio-5) calc(var(--ancho-nav-lateral) + var(--espacio-6));
   }
 }
+
+/* ---- Utilidades de formulario y listas (genéricas para módulos) ---- */
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+.fila__principal {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.fila__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-weight: 600;
+}
+
+.fila__titulo a {
+  color: inherit;
+}
+
+.grupo--en-linea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-1) var(--espacio-4);
+}
+
+.grupo--en-linea legend {
+  width: 100%;
+}
+
+.grupo--en-linea .campo__ayuda,
+.grupo--en-linea .campo__error {
+  width: 100%;
+}
+
+.campo__error {
+  color: var(--color-peligro);
+  font-size: var(--texto-pequeno);
+  font-weight: 600;
+}
+
+.campo [aria-invalid='true'],
+.grupo[aria-invalid='true'] {
+  border-color: var(--color-peligro);
+}
+
+.filtros {
+  display: grid;
+  gap: var(--espacio-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.tachado {
+  text-decoration: line-through;
+  color: var(--color-texto-tenue);
+}
+
+.etiqueta--peligro {
+  background: var(--color-peligro);
+  color: var(--color-superficie);
+}
+
+.detalles > summary {
+  min-height: var(--tamano-objetivo);
+  padding: var(--espacio-2) 0;
+  font-weight: 600;
+  cursor: pointer;
+}
