@@ -99,10 +99,12 @@ function Detalle({ ctx, e, clave }: { ctx: ContextoDeModulo; e: EventoDeCalendar
           <Marcas ctx={ctx} x={o} />
         </h2>
         <dl class="datos">
-          <dt>{e.recurrencia ? t('calendario.ocurrencia.de', { fecha: fechas.diaLargo(clave) }) : fechas.diaLargo(o.fechaInicio)}</dt>
+          <dt>{t('calendario.cuando')}</dt>
           <dd>
+            <span class="cal-primera-mayuscula">{fechas.diaLargo(o.fechaInicio)}</span>
+            {' · '}
             {o.todoElDia && o.fechaFin !== o.fechaInicio ? `${fechas.diaMes(o.fechaInicio)} – ${fechas.diaMes(o.fechaFin)}` : horarioDe(ctx, o)}
-            {o.modificada && ` · ${t('calendario.modificada')}`}
+            {o.modificada && ` · ${t('calendario.ocurrencia.de', { fecha: fechas.diaLargo(clave) })} (${t('calendario.modificada').toLowerCase()})`}
           </dd>
           {o.lugar && (
             <>

@@ -127,7 +127,8 @@
   "calendario.volver": "Volver al calendario",
   "calendario.editarSerieAviso": "Estás editando toda la serie. Las ocurrencias editadas o borradas una por una se conservan si siguen cayendo en la repetición.",
 
-  "calendario.ocurrencia.de": "Ocurrencia del {fecha}",
+  "calendario.cuando": "Cuándo",
+  "calendario.ocurrencia.de": "original del {fecha}",
   "calendario.ocurrencia.editarSolo": "Editar solo esta",
   "calendario.ocurrencia.editarSerie": "Editar toda la serie",
   "calendario.ocurrencia.borrarSolo": "Borrar solo esta",

@@ -224,7 +224,8 @@ function Cuadricula({
   useLayoutEffect(() => {
     const d = desplazable.current;
     const fila = d?.querySelector<HTMLElement>(`[data-hora="${HORA_INICIAL_VISIBLE}"]`);
-    if (d && fila) d.scrollTop = fila.offsetTop - d.offsetTop;
+    // El contenedor es `position: relative`: offsetTop de la fila ya es relativo a él.
+    if (d && fila) d.scrollTop = fila.offsetTop;
   }, [fechasVisibles[0]]);
 
   const crearEn = (fecha: string, e: MouseEvent) => {
@@ -283,7 +284,7 @@ function Cuadricula({
           <div class="cal-rejilla__etiquetas" aria-hidden="true">
             {HORAS.map((h) => (
               <span key={h} class="cal-hora" data-hora={h}>
-                {h === 0 ? '' : ctx.formatos.hora(new Date(zona.aUtc(fechasVisibles[0]!, h * 60)))}
+                {h === 0 ? '' : fechas.horaSola(h)}
               </span>
             ))}
           </div>

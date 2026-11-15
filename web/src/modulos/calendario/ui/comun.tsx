@@ -94,12 +94,15 @@ const fmtMesAnio = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', month: 'lo
 const fmtDiaLargo = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' });
 const fmtDiaCorto = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
 const fmtDiaMes = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', day: 'numeric', month: 'short' });
+const fmtHoraSola = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', hour: 'numeric' });
 
 export const fechas = {
   mesAnio: (f: string) => fmtMesAnio.format(enUtc(f)),
   diaLargo: (f: string) => fmtDiaLargo.format(enUtc(f)),
   diaCorto: (f: string) => fmtDiaCorto.format(enUtc(f)),
   diaMes: (f: string) => fmtDiaMes.format(enUtc(f)),
+  /** Etiqueta de la cuadrícula horaria: "7 a. m.". */
+  horaSola: (h: number) => fmtHoraSola.format(new Date(Date.UTC(2000, 0, 1, h))),
 };
 
 export const hoyCivil = (ctx: ContextoDeModulo) => zonaDelUsuario().aCivil(ctx.reloj.ahora().getTime()).fecha;

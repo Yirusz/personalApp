@@ -19,6 +19,7 @@
   font-size: 1.125rem;
 }
 
+.cal-primera-mayuscula::first-letter,
 .cal-titulo::first-letter,
 .cal-dia-agenda__titulo::first-letter {
   text-transform: uppercase;
@@ -194,8 +195,9 @@
 .cal-hora {
   padding-right: var(--espacio-1);
   color: var(--color-texto-tenue);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   text-align: right;
+  white-space: nowrap;
   transform: translateY(-0.6em);
 }
 
@@ -351,6 +353,11 @@
   box-shadow: inset 0 0 0 2px var(--color-acento);
 }
 
+.cal-mes__dia.cal-hoy .cal-mes__titulos {
+  color: var(--color-texto);
+  font-weight: 400;
+}
+
 .cal-mes__dia.cal-hoy .cal-mes__numero {
   background: var(--color-acento);
   color: var(--color-superficie);
@@ -427,6 +434,7 @@
 
 .cal-dos-columnas {
   display: grid;
+  align-items: start;
   gap: var(--espacio-3);
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
 }
@@ -437,6 +445,22 @@
 
 .cal-numero {
   width: 5.5rem;
+}
+
+/* Controles sueltos (fuera de .campo) con el mismo aspecto y objetivo táctil que los demás. */
+.cal-fila-corta > input:not([type='radio']):not([type='checkbox']),
+.cal-fila-corta > select {
+  min-height: var(--tamano-objetivo);
+  padding: var(--espacio-2) var(--espacio-3);
+  border: var(--borde-ancho) solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+}
+
+.cal-fila-corta > input:disabled {
+  opacity: 0.6;
 }
 
 .oculto-etiqueta > label {
@@ -490,4 +514,8 @@
 .cal-bandeja a {
   color: inherit;
   font-weight: 600;
+}
+
+.cal-primera-mayuscula {
+  display: inline-block;
 }

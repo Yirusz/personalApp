@@ -33,13 +33,17 @@ export function VistaIcs({ ctx }: PropsDeVista) {
   };
 
   const elegirArchivo = async (e: Event) => {
-    const archivo = (e.currentTarget as HTMLInputElement).files?.[0];
+    const entrada = e.currentTarget as HTMLInputElement;
+    const archivo = entrada.files?.[0];
     setPrevia(null);
     setAvisoImportar(null);
     if (!archivo) return;
     setOcupado(true);
     try {
-      setPrevia(await prepararImportacion(await leerArchivoComoTexto(archivo), ctx.reloj.ahora(), color));
+      const texto = await leerArchivoComoTexto(archivo);
+      // Se limpia para que volver a elegir el MISMO archivo (reimportar) dispare `change`.
+      entrada.value = '';
+      setPrevia(await prepararImportacion(texto, ctx.reloj.ahora(), color));
     } catch (error) {
       setAvisoImportar({ ok: false, texto: t(error instanceof Error && 'clave' in error ? String(error.clave) : 'calendario.ics.error.lectura') });
     } finally {
