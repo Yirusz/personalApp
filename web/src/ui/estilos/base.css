@@ -367,3 +367,8 @@ a {
 .dialogo::backdrop {
   background: rgb(0 0 0 / 0.5);
 }
+
+.seccion > .boton,
+.pila > .boton {
+  justify-self: start;
+}

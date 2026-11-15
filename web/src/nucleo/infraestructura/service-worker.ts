@@ -18,15 +18,24 @@ export function registrarServiceWorker(
   if (import.meta.env.DEV) return alCambiarEstado('desactivado-en-desarrollo');
 
   alCambiarEstado('registrando');
+  // Solo se recarga si el usuario pidió actualizar. En la primera instalación el SW
+  // toma el control con clients.claim() y también dispara 'controllerchange':
+  // recargar ahí interrumpiría al usuario sin motivo.
+  let actualizacionPedida = false;
   let recargando = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recargando) return;
+    if (!actualizacionPedida || recargando) return;
     recargando = true;
     location.reload();
   });
 
   const ofrecer = (trabajador: ServiceWorker) =>
-    alHaberActualizacion({ aplicar: () => trabajador.postMessage({ tipo: 'SALTAR_ESPERA' }) });
+    alHaberActualizacion({
+      aplicar: () => {
+        actualizacionPedida = true;
+        trabajador.postMessage({ tipo: 'SALTAR_ESPERA' });
+      },
+    });
 
   navigator.serviceWorker
     .register('./sw.js')

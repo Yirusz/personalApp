@@ -9,6 +9,9 @@ const CACHE = `ludus-${VERSION}`;
 const PRECACHE = [] /* __LUDUS_PRECACHE__ */;
 
 const aUrl = (ruta) => new URL(ruta, self.registration.scope).href;
+// ignoreVary: algunos servidores responden "Vary: Origin" y las peticiones de módulos
+// (crossorigin) traen Origin; sin esto no coincidirían con lo precacheado y fallarían sin red.
+const OPCIONES_DE_BUSQUEDA = { ignoreVary: true };
 
 self.addEventListener('install', (evento) => {
   evento.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE.map(aUrl))));
@@ -34,9 +37,9 @@ self.addEventListener('fetch', (evento) => {
 
   if (peticion.mode === 'navigate') {
     evento.respondWith(
-      caches.match(aUrl('./index.html')).then((enCache) => enCache || fetch(peticion)),
+      caches.match(aUrl('./index.html'), OPCIONES_DE_BUSQUEDA).then((enCache) => enCache || fetch(peticion)),
     );
     return;
   }
-  evento.respondWith(caches.match(peticion).then((enCache) => enCache || fetch(peticion)));
+  evento.respondWith(caches.match(peticion, OPCIONES_DE_BUSQUEDA).then((enCache) => enCache || fetch(peticion)));
 });
