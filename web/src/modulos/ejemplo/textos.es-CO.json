@@ -1,0 +1,12 @@
+{
+  "ejemplo.nombre": "Ejemplo",
+  "ejemplo.titulo": "Módulo de ejemplo",
+  "ejemplo.descripcion": "Este módulo demuestra el contrato: guarda un registro, publica el evento ejemplo.RegistroCreado y el RPG lo convierte en experiencia.",
+  "ejemplo.campo": "Nota (opcional)",
+  "ejemplo.ayuda": "Máximo {max} caracteres.",
+  "ejemplo.registrar": "Registrar",
+  "ejemplo.registrado": "¡Registrado! Revisa tu progreso en Inicio.",
+  "ejemplo.vacio": "Aún no hay registros. Crea el primero.",
+  "ejemplo.sinTexto": "(sin nota)",
+  "ejemplo.recientes": "Recientes"
+}
