@@ -10,13 +10,14 @@ import { render } from 'preact';
 import { MODULOS } from './modulos';
 import { BusDeEventos } from './nucleo/aplicacion/bus-de-eventos';
 import { RegistroDeModulos } from './nucleo/aplicacion/registro-de-modulos';
-import type { ContextoDeModulo } from './nucleo/contrato';
+import type { ContextoDeModulo, Integraciones } from './nucleo/contrato';
 import { GeneradorUuidV7 } from './nucleo/dominio/uuidv7';
 import textosDelNucleo from './nucleo/i18n/es-CO.json';
 import { crearFormatos, crearTraductor } from './nucleo/i18n/traductor';
 import { AlmacenIndexedDb, NUCLEO } from './nucleo/infraestructura/almacen-indexeddb';
 import { destinoEnAlmacen, RegistroDeDiagnostico } from './nucleo/infraestructura/diagnostico';
 import { aleatorioCriptografico, relojDelSistema } from './nucleo/infraestructura/reloj-del-sistema';
+import { crearIntegraciones } from './nucleo/aplicacion/integraciones';
 import { notificadorDelNavegador } from './nucleo/infraestructura/notificaciones';
 import { registrarServiceWorker, type EstadoDelServiceWorker } from './nucleo/infraestructura/service-worker';
 import { aplicarApariencia, leerApariencia } from './ui/apariencia';
@@ -52,6 +53,8 @@ async function iniciar(raiz: HTMLElement): Promise<void> {
     await diagnostico.conectar(destinoEnAlmacen(almacen.paraModulo(NUCLEO)));
 
     const contextos = new Map<string, ContextoDeModulo>();
+    // eslint-disable-next-line prefer-const -- se asigna justo después: contextos e integraciones se referencian entre sí.
+    let integraciones: Integraciones;
     const contextoDe = (moduloId: string): ContextoDeModulo => {
       let ctx = contextos.get(moduloId);
       if (!ctx) {
@@ -64,12 +67,14 @@ async function iniciar(raiz: HTMLElement): Promise<void> {
           formatos,
           diagnostico,
           notificaciones: notificadorDelNavegador,
+          integraciones,
           navegar,
         };
         contextos.set(moduloId, ctx);
       }
       return ctx;
     };
+    integraciones = crearIntegraciones(registro.modulos, contextoDe);
 
     const bus = new BusDeEventos(almacen, diagnostico, reloj);
     for (const modulo of registro.modulos) {
