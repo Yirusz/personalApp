@@ -274,6 +274,7 @@ a {
 .acciones {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--espacio-2);
 }
 
@@ -371,4 +372,144 @@ a {
 .seccion > .boton,
 .pila > .boton {
   justify-self: start;
+}
+
+/* ---- Color categórico: data-color="verde" en el elemento o un ancestro ---- */
+
+[data-color='verde'] { --color-cat: var(--color-cat-verde); }
+[data-color='azul'] { --color-cat: var(--color-cat-azul); }
+[data-color='morado'] { --color-cat: var(--color-cat-morado); }
+[data-color='rosa'] { --color-cat: var(--color-cat-rosa); }
+[data-color='rojo'] { --color-cat: var(--color-cat-rojo); }
+[data-color='naranja'] { --color-cat: var(--color-cat-naranja); }
+[data-color='amarillo'] { --color-cat: var(--color-cat-amarillo); }
+[data-color='gris'] { --color-cat: var(--color-cat-gris); }
+
+.marca-color {
+  display: inline-block;
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--color-cat, var(--color-borde));
+}
+
+/* ---- Barra "Deshacer" (snackbar) del shell ---- */
+
+.barra-deshacer {
+  position: fixed;
+  inset: auto var(--espacio-4) calc(var(--alto-nav-inferior) + var(--espacio-3) + env(safe-area-inset-bottom));
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-4);
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: var(--espacio-2) var(--espacio-2) var(--espacio-2) var(--espacio-4);
+  border-radius: var(--radio);
+  background: var(--color-texto);
+  color: var(--color-fondo);
+  box-shadow: var(--sombra);
+}
+
+.barra-deshacer .boton {
+  border-color: transparent;
+  background: transparent;
+  color: inherit;
+}
+
+.barra-deshacer .boton--primario {
+  color: var(--color-fondo);
+  text-decoration: underline;
+}
+
+@media (hover: hover) {
+  .barra-deshacer .boton:hover {
+    background: rgb(127 127 127 / 0.25);
+  }
+}
+
+@media (min-width: 720px) {
+  .barra-deshacer {
+    inset: auto var(--espacio-6) var(--espacio-5) calc(var(--ancho-nav-lateral) + var(--espacio-6));
+  }
+}
+
+/* ---- Utilidades de formulario y listas (genéricas para módulos) ---- */
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+.fila__principal {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.fila__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-weight: 600;
+}
+
+.fila__titulo a {
+  color: inherit;
+}
+
+.grupo--en-linea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-1) var(--espacio-4);
+}
+
+.grupo--en-linea legend {
+  width: 100%;
+}
+
+.grupo--en-linea .campo__ayuda,
+.grupo--en-linea .campo__error {
+  width: 100%;
+}
+
+.campo__error {
+  color: var(--color-peligro);
+  font-size: var(--texto-pequeno);
+  font-weight: 600;
+}
+
+.campo [aria-invalid='true'],
+.grupo[aria-invalid='true'] {
+  border-color: var(--color-peligro);
+}
+
+.filtros {
+  display: grid;
+  gap: var(--espacio-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.tachado {
+  text-decoration: line-through;
+  color: var(--color-texto-tenue);
+}
+
+.etiqueta--peligro {
+  background: var(--color-peligro);
+  color: var(--color-superficie);
+}
+
+.detalles > summary {
+  min-height: var(--tamano-objetivo);
+  padding: var(--espacio-2) 0;
+  font-weight: 600;
+  cursor: pointer;
 }

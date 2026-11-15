@@ -22,6 +22,17 @@
   --color-alerta-texto: light-dark(#6b4a00, #f2d38a);
   --color-foco: light-dark(#0b57d0, #a8c7fa);
 
+  /* Colores categóricos (materias, elementos de agenda). Solo para marcas gráficas,
+     no para texto: contraste ≥ 3:1 contra la superficie en ambos esquemas (WCAG 1.4.11). */
+  --color-cat-verde: light-dark(#2e7d32, #81c784);
+  --color-cat-azul: light-dark(#1565c0, #64b5f6);
+  --color-cat-morado: light-dark(#6a1b9a, #ce93d8);
+  --color-cat-rosa: light-dark(#ad1457, #f48fb1);
+  --color-cat-rojo: light-dark(#c62828, #ef9a9a);
+  --color-cat-naranja: light-dark(#c25e00, #ffb74d);
+  --color-cat-amarillo: light-dark(#8d6e00, #fff176);
+  --color-cat-gris: light-dark(#616161, #bdbdbd);
+
   --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;
   --fuente-mono: ui-monospace, 'Cascadia Mono', 'Ubuntu Mono', 'Roboto Mono', monospace;
   --texto-base: 1rem;

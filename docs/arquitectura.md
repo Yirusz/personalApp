@@ -114,6 +114,12 @@ Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloI
 3. Si debe dar XP: agregar reglas en `modulos/rpg/reglas.v1.json` (configuración del RPG, no código).
 4. `npm run check`. El registro y la prueba de arquitectura avisan si algo rompe el contrato.
 
+### Piezas compartidas para módulos
+- `nucleo/dominio/agenda.ts`: `ElementoDeAgenda` (lenguaje publicado para el Calendario) y la paleta `COLORES_CATEGORICOS` (tokens `--color-cat-*`, marcas con `data-color` y `.marca-color`).
+- `ctx.formatos`: además de fecha/hora/número, `entradaLocal` / `desdeEntradaLocal` (valor de `<input type="datetime-local">` siempre en hora de Bogotá, sin depender de la zona del dispositivo) y `relativo` ("mañana", "dentro de 3 horas").
+- `ui/deshacer.tsx`: `ofrecerDeshacer({ mensaje, deshacer?, confirmar?, ocultar? })` muestra la barra "Deshacer" del shell durante 10 s (también Ctrl+Z). Las acciones diferidas (`confirmar`) se ejecutan al vencer el plazo o al pasar la app a segundo plano.
+- `ui/componentes.tsx` + utilidades de `base.css` (`fila`, `filtros`, `campo__error`, `grupo--en-linea`, `etiqueta--alerta`).
+
 ## 5. Almacenamiento
 
 - Una base IndexedDB `ludus`. Almacenes `<modulo>_<nombre>`; el módulo usa nombres cortos.

@@ -3,6 +3,7 @@ import {
   ALMACEN_PERFIL,
   ALMACEN_REGISTRO,
   EVENTO_NIVEL_ALCANZADO,
+  INDICE_CLAVE_UNICA,
   INDICE_TIPO_DIA,
   crearSuscripcionDeExperiencia,
 } from './aplicacion/registrar-experiencia';
@@ -15,7 +16,7 @@ export const REGLAS = validarConfiguracion(reglasV1);
 
 export default definirModulo({
   id: 'rpg',
-  version: '0.1.0',
+  version: '0.2.0',
   nombre: 'rpg.nombre',
   textos,
   navegacion: {
@@ -39,6 +40,13 @@ export default definirModulo({
         ctx.crearAlmacen(ALMACEN_REGISTRO);
         ctx.crearIndice(ALMACEN_REGISTRO, INDICE_TIPO_DIA, ['tipo', 'dia']);
         ctx.crearAlmacen(ALMACEN_PERFIL);
+      },
+    },
+    {
+      version: 2,
+      descripcion: 'Índice por clave única para la regla unaVezPor (un premio por entidad)',
+      aplicar(ctx) {
+        ctx.crearIndice(ALMACEN_REGISTRO, INDICE_CLAVE_UNICA, 'claveUnica');
       },
     },
   ],

@@ -8,11 +8,12 @@
 import type { Suscripcion, TransaccionDeLectura } from '../../../nucleo/contrato';
 import type { EventoDeDominio } from '../../../nucleo/dominio/evento';
 import { progresoPara } from '../dominio/nivel';
-import { aplicarLimiteDiario, indexarReglas, xpBase, type ConfiguracionDeReglas } from '../dominio/reglas';
+import { calcularXp, claveUnica, indexarReglas, type ConfiguracionDeReglas, type NotaDeAsiento } from '../dominio/reglas';
 
 export const ALMACEN_REGISTRO = 'registro';
 export const ALMACEN_PERFIL = 'perfil';
 export const INDICE_TIPO_DIA = 'por_tipo_dia';
+export const INDICE_CLAVE_UNICA = 'por_clave_unica';
 export const EVENTO_NIVEL_ALCANZADO = 'rpg.NivelAlcanzado';
 const ID_PERFIL = 'perfil';
 
@@ -27,8 +28,10 @@ export interface AsientoDeExperiencia {
   xpBase: number;
   xp: number;
   atributo: string;
-  /** Por qué se otorgó menos de la base, si aplica. */
-  nota?: 'limite-diario';
+  /** Por qué se otorgó menos de lo esperado, si aplica. */
+  nota?: NotaDeAsiento;
+  /** `<evento>|<id de la entidad>` cuando la regla tiene `unaVezPor` (índice `por_clave_unica`). */
+  claveUnica?: string;
 }
 
 export interface Perfil {
@@ -70,26 +73,33 @@ export function crearSuscripcionDeExperiencia(
       if (await tx.obtener(ALMACEN_REGISTRO, evento.id)) return;
 
       const dia = diaLocal(evento.ocurridoEn);
-      const base = xpBase(regla, evento.datos);
-      let xp = base;
+      let acumuladoHoy = 0;
       if (regla.limiteDiarioXp !== undefined) {
         const delDia = await tx.listar<AsientoDeExperiencia>(ALMACEN_REGISTRO, {
           indice: INDICE_TIPO_DIA,
           desde: [evento.tipo, dia],
           hasta: [evento.tipo, dia],
         });
-        xp = aplicarLimiteDiario(base, delDia.reduce((suma, a) => suma + a.xp, 0), regla.limiteDiarioXp);
+        acumuladoHoy = delDia.reduce((suma, a) => suma + a.xp, 0);
       }
+      const clave = claveUnica(regla, evento.datos);
+      let yaOtorgado = false;
+      if (clave !== undefined) {
+        const previos = await tx.listar<AsientoDeExperiencia>(ALMACEN_REGISTRO, { indice: INDICE_CLAVE_UNICA, desde: clave, hasta: clave });
+        yaOtorgado = previos.some((a) => a.xp > 0);
+      }
+      const { xpBase, xp, nota } = calcularXp(regla, evento.datos, { acumuladoHoy, yaOtorgado });
 
       const asiento: AsientoDeExperiencia = {
         id: evento.id,
         tipo: evento.tipo,
         dia,
         ocurridoEn: evento.ocurridoEn,
-        xpBase: base,
+        xpBase,
         xp,
         atributo: regla.atributo,
-        ...(xp < base ? { nota: 'limite-diario' as const } : {}),
+        ...(nota ? { nota } : {}),
+        ...(clave !== undefined ? { claveUnica: clave } : {}),
       };
       await tx.poner(ALMACEN_REGISTRO, asiento);
       if (xp === 0) return;

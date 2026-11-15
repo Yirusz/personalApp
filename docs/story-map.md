@@ -8,9 +8,9 @@ El **backbone** (fila superior) son las actividades del usuario en orden. Debajo
 
 | Organizar mi semestre | Planear mi semana | Estudiar | Cumplir y entregar | Ver mi progreso y premiarme | Tomar notas | Cuidar mis datos |
 |---|---|---|---|---|---|---|
-| U1 Crear materia | C1 Agenda de próximos días | E1 Pomodoro con fases | U4 Avanzar estado de un entregable | R1 Reglas v1 completas | | F1 Exportar/importar ✅ |
-| U2 Editar/archivar materia | C3 Crear/editar evento | E2 Configurar Pomodoro | U5 Lista y "próximos vencimientos" | R2 Racha semanal con comodines | | F2 Diagnóstico ✅ |
-| U3 Registrar entregable | C4 Entregables en el calendario | E3 Aviso al terminar (app visible) | U6 Reprogramar/eliminar | R3 Logros básicos | | F3 Proteger datos (persistencia) ✅ |
+| U1 Crear materia ✅ | C1 Agenda de próximos días | E1 Pomodoro con fases | U4 Avanzar estado de un entregable ✅ | R1 Reglas v1 completas | | F1 Exportar/importar ✅ |
+| U2 Editar/archivar materia ✅ | C3 Crear/editar evento | E2 Configurar Pomodoro | U5 Lista y "próximos vencimientos" ✅ | R2 Racha semanal con comodines | | F2 Diagnóstico ✅ |
+| U3 Registrar entregable ✅ | C4 Entregables en el calendario | E3 Aviso al terminar (app visible) | U6 Reprogramar/eliminar ✅ | R3 Logros básicos | | F3 Proteger datos (persistencia) ✅ |
 | | C2 Vista semana | E4 Sesiones y estadísticas | | R4 Recompensas y canje con oro | | |
 | | C5 Recordatorios al abrir | E5 Pomodoro resistente a congelamiento | | R5 Avisos de nivel y logro | | |
 | | C6 Revisión semanal | | | | | |
@@ -21,7 +21,7 @@ El **backbone** (fila superior) son las actividades del usuario en orden. Debajo
 | | | | | | N4 Vincular nota ↔ materia/entregable | |
 | | | | | | O1 Exportar/importar notas a Obsidian (.md) | |
 
-✅ = construido en la fase 1 (fundación).
+✅ = construido (fase 1: fundación; iteración 1: Universidad).
 
 **Totales MVP:** Universidad 15 · Calendario 19 · Estudio 15 · RPG 18 → **67 puntos**.
 

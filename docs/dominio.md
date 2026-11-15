@@ -75,7 +75,7 @@ classDiagram
     +completar(ahora) EntregableCompletado
     +reabrir()
     +reprogramar(nuevaFecha)
-    +cambiarTalla(talla)
+    +editar(titulo, tipo, prioridad, talla)
   }
   class EstadoDeEntregable {
     <<enum>>
@@ -98,9 +98,12 @@ classDiagram
 |---|---|
 | Agregados | `Materia`, `Entregable` (referencia a Materia **por id**) |
 | Value objects | `NombreDeMateria` (1–60, sin espacios extremos), `ColorDeMateria` (de una paleta de tokens), `Creditos` (0–10), `Titulo` (1–120), `TipoDeEntregable` (trabajo, tarea, parcial, otro), `Prioridad` (baja, media, alta), `Talla` (S, M, L), `Instante` (UTC ISO 8601) |
-| Invariantes | Nombre de materia único entre las **activas** (sin distinguir mayúsculas; lo verifica el caso de uso). Una materia archivada no recibe entregables nuevos. La talla no cambia una vez `EnCurso` o `Completado`. `completadoEn` existe si y solo si el estado es `Completado`. No se completa dos veces sin reabrir. |
+| Invariantes | Nombre de materia único entre las **activas** (sin distinguir mayúsculas ni espacios repetidos; lo verifica el caso de uso, también al renombrar y al restaurar). Una materia archivada no recibe entregables nuevos. La talla no cambia una vez `EnCurso` o `Completado`. `completadoEn` existe si y solo si el estado es `Completado`. No se completa dos veces sin reabrir. **Reabrir** vuelve a `EnCurso` (la talla sigue bloqueada). Un entregable completado no se reprograma (primero se reabre). |
+| Transiciones | `Pendiente → EnCurso → Completado`; `Pendiente → Completado`; `Completado → (reabrir) → EnCurso`. Eliminar: desde cualquier estado, borrado físico (la historia queda en el registro de eventos). |
+| Visibilidad | Los entregables de una materia archivada se conservan (historial y estadísticas) pero no aparecen en las listas activas ni en "Próximos vencimientos". |
 | Reglas derivadas | `aTiempo = completadoEn ≤ venceEn`. `minutosDesdeCreacion` y `antelacionHoras` se calculan con el `Reloj` y viajan en el evento. |
-| Eventos | `universidad.MateriaCreada {materiaId, nombre, color}` · `MateriaRenombrada {materiaId, nombre}` · `MateriaArchivada {materiaId}` · `MateriaRestaurada {materiaId}` · `EntregableCreado {entregableId, materiaId, talla, venceEn, antelacionHoras, agenda}` · `EntregableReprogramado {entregableId, venceEnAnterior, venceEn, agenda}` · `EntregableIniciado {entregableId}` · `EntregableCompletado {entregableId, materiaId, talla, aTiempo, minutosDesdeCreacion, agenda}` · `EntregableReabierto {entregableId, agenda}` · `EntregableEliminado {entregableId, agenda}` |
+| Eventos (v1) | `universidad.MateriaCreada {materiaId, nombre, color}` · `MateriaRenombrada {materiaId, nombre}` · `MateriaArchivada {materiaId}` · `MateriaRestaurada {materiaId}` · `EntregableCreado {entregableId, materiaId, talla, venceEn, antelacionHoras, agenda}` · `EntregableEditado {entregableId, campos[], talla, agenda}` · `EntregableReprogramado {entregableId, venceEnAnterior, venceEn, agenda}` · `EntregableIniciado {entregableId}` · `EntregableCompletado {entregableId, materiaId, talla, aTiempo, minutosDesdeCreacion, agenda}` · `EntregableReabierto {entregableId, agenda}` · `EntregableEliminado {entregableId, agenda (estado "eliminado")}`. Catálogo en código: `modulos/universidad/aplicacion/comun.ts`. Una operación sin cambios reales (mismo nombre, misma fecha) no publica nada. |
+| Implementación | Iteración 1 (`web/src/modulos/universidad/`). `antelacionHoras` = horas completas entre el registro y `venceEn` (negativa si ya venció). `minutosDesdeCreacion` = minutos completos entre `creadoEn` y `completadoEn`. |
 
 ## 3. Contexto Calendario
 
@@ -273,7 +276,7 @@ classDiagram
 | Invariantes | La XP **nunca disminuye**. `xpTotal = Σ asientos.xp`. Un evento produce como máximo un asiento (idempotencia). Oro disponible = ⌊xpTotal / 10⌋ − oroGastado ≥ 0: no se canjea sin oro suficiente. Comodines 0–2. Un logro se desbloquea una sola vez. |
 | Eventos | `rpg.NivelAlcanzado {nivel, nivelAnterior}` · `SemanaDeRachaCumplida {semana, rachaSemanas}` · `RachaPerdida {semana}` · `ComodinUsado {semana}` · `LogroDesbloqueado {logroId}` · `RecompensaCreada {recompensaId}` · `RecompensaCanjeada {canjeId, recompensaId, costoOro}` · `CanjeDeshecho {canjeId}` |
 
-Implementado en la fundación: `AsientoDeExperiencia`, `Perfil`, fórmula de nivel y `rpg.NivelAlcanzado`; reglas `xp`, `xpPorTalla` y `limiteDiarioXp`.
+Implementado en la fundación: `AsientoDeExperiencia`, `Perfil`, fórmula de nivel y `rpg.NivelAlcanzado`; reglas `xp`, `xpPorTalla` y `limiteDiarioXp`. Iteración 1: `unaVezPor` (índice `por_clave_unica`, migración v2 del RPG), `minMinutosDesdeCreacion`, `minAntelacionHoras` y `multiplicadorPuntual`, en la función pura `calcularXp`.
 
 ## 6. Contexto Notas (post-MVP, esbozo)
 
@@ -284,6 +287,7 @@ Implementado en la fundación: `AsientoDeExperiencia`, `Perfil`, fórmula de niv
 | Concepto | Descripción |
 |---|---|
 | `EventoDeDominio` | `{ id: UUIDv7, tipo: 'modulo.NombreEnPasado', modulo, version, ocurridoEn: ISO UTC, datos }` |
+| `ElementoDeAgenda` | `nucleo/dominio/agenda.ts`: lenguaje publicado para el Calendario, con colores por token (`COLORES_CATEGORICOS`). |
 | `Reloj` | Puerto de tiempo; `RelojFijo` en pruebas. |
 | `GeneradorUuidV7` | Ids ordenables, monótonos, generables sin conexión. |
 | `Transaccion` | Unidad de trabajo: cambios + eventos, todo o nada. |
