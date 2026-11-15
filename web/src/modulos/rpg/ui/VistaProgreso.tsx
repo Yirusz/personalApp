@@ -39,7 +39,7 @@ export function VistaProgreso({ ctx }: PropsDeVista) {
                 <strong>{t('rpg.asiento', { xp: a.xp, atributo: t(`rpg.atributo.${a.atributo}`) })}</strong>{' '}
                 <span class="texto-tenue">
                   {a.tipo} · {formatos.fechaHora(a.ocurridoEn)}
-                  {a.nota === 'limite-diario' && ` · ${t('rpg.limiteDiario')}`}
+                  {a.nota && ` · ${t(`rpg.nota.${a.nota}`)}`}
                 </span>
               </li>
             ))}

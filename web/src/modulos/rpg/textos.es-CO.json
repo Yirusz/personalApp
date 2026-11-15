@@ -13,7 +13,10 @@
   "rpg.historial": "Experiencia reciente",
   "rpg.historialVacio": "Aún no has ganado experiencia. ¡Completa algo y vuelve aquí!",
   "rpg.asiento": "+{xp} XP · {atributo}",
-  "rpg.limiteDiario": "tope diario alcanzado",
+  "rpg.nota.limite-diario": "tope diario alcanzado",
+  "rpg.nota.ya-otorgado": "ya se premió antes",
+  "rpg.nota.muy-rapido": "completado muy rápido",
+  "rpg.nota.poca-antelacion": "registrado con poca antelación",
   "rpg.empezar": "Empieza a ganar experiencia completando actividades.",
   "rpg.verProgreso": "Ver progreso"
 }

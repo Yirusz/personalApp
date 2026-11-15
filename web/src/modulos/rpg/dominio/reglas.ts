@@ -2,9 +2,10 @@
  * Configuración de reglas del RPG (ADR-0005). Se valida al arrancar: una
  * configuración inválida detiene la app con un mensaje claro (falla rápido).
  *
- * Estado de implementación (fundación): el motor aplica `xp`, `xpPorTalla` y
- * `limiteDiarioXp`. Los demás campos ya se validan y se implementan en la
- * iteración del RPG (ver docs/plan-maestro.md).
+ * Estado de implementación: el motor aplica `xp`, `xpPorTalla`, `limiteDiarioXp`,
+ * `unaVezPor`, `minMinutosDesdeCreacion`, `minAntelacionHoras` y
+ * `multiplicadorPuntual` (iteración 1). `tramosDiarios` y la racha se validan y
+ * se implementan en la iteración del RPG (ver docs/plan-maestro.md).
  */
 import { PATRON_TIPO_EVENTO } from '../../../nucleo/dominio/evento';
 
@@ -22,12 +23,16 @@ export interface ReglaDeEvento {
   xp?: number;
   xpPorTalla?: Partial<Record<Talla, number>>;
   limiteDiarioXp?: number;
-  // ---- Pendientes de implementar (iteración RPG) ----
+  /** × si `datos.aTiempo === true`. */
   multiplicadorPuntual?: number;
+  /** 0 XP si `datos.minutosDesdeCreacion` es menor (o falta). */
   minMinutosDesdeCreacion?: number;
+  /** 0 XP si `datos.antelacionHoras` es menor (o falta). */
   minAntelacionHoras?: number;
-  tramosDiarios?: TramoDiario[];
+  /** Campo de `datos` que identifica la entidad: a lo sumo un asiento con XP por valor. */
   unaVezPor?: string;
+  // ---- Pendientes de implementar (iteración RPG) ----
+  tramosDiarios?: TramoDiario[];
   sinMultiplicadorDeRacha?: boolean;
 }
 
@@ -99,6 +104,9 @@ export function validarConfiguracion(datos: unknown): ConfiguracionDeReglas {
     for (const campo of ['limiteDiarioXp', 'minMinutosDesdeCreacion', 'minAntelacionHoras'] as const) {
       if (r[campo] !== undefined && !esNumero(r[campo])) p.push(`${donde}.${campo} debe ser ≥ 0`);
     }
+    if (r.unaVezPor !== undefined && (typeof r.unaVezPor !== 'string' || r.unaVezPor.length === 0)) {
+      p.push(`${donde}.unaVezPor debe ser el nombre de un campo de datos`);
+    }
     if (r.multiplicadorPuntual !== undefined && !esNumero(r.multiplicadorPuntual, 1)) p.push(`${donde}.multiplicadorPuntual debe ser ≥ 1`);
     if (r.tramosDiarios !== undefined) {
       const tramos = r.tramosDiarios;
@@ -131,4 +139,61 @@ export function xpBase(regla: ReglaDeEvento, datos: Readonly<Record<string, unkn
 export function aplicarLimiteDiario(xp: number, acumuladoHoy: number, limite: number | undefined): number {
   if (limite === undefined) return xp;
   return Math.max(0, Math.min(xp, limite - acumuladoHoy));
+}
+
+export type NotaDeAsiento = 'limite-diario' | 'ya-otorgado' | 'muy-rapido' | 'poca-antelacion';
+
+export interface CalculoDeXp {
+  /** XP de la regla antes de condiciones, multiplicadores y topes. */
+  xpBase: number;
+  xp: number;
+  /** Por qué se otorgó menos de lo esperado, si aplica. */
+  nota?: NotaDeAsiento;
+}
+
+export interface HistoriaParaElCalculo {
+  /** XP ya otorgada hoy por este tipo de evento. */
+  acumuladoHoy: number;
+  /** Si la entidad de `unaVezPor` ya otorgó XP antes. */
+  yaOtorgado: boolean;
+}
+
+/** Clave de idempotencia de negocio (`<evento>|<valor>`) cuando la regla tiene `unaVezPor`. */
+export function claveUnica(regla: ReglaDeEvento, datos: Readonly<Record<string, unknown>>): string | undefined {
+  if (!regla.unaVezPor) return undefined;
+  const valor = datos[regla.unaVezPor];
+  return typeof valor === 'string' || typeof valor === 'number' ? `${regla.evento}|${valor}` : undefined;
+}
+
+const numeroEn = (datos: Readonly<Record<string, unknown>>, campo: string): number | undefined => {
+  const v = datos[campo];
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+};
+
+/**
+ * Orden de cálculo (docs/gamificacion.md §3): base → condiciones → puntualidad →
+ * [tramos y racha: iteración RPG] → tope diario → redondeo hacia abajo.
+ * Un dato que falta no se adivina: la condición se considera no cumplida.
+ */
+export function calcularXp(regla: ReglaDeEvento, datos: Readonly<Record<string, unknown>>, historia: HistoriaParaElCalculo): CalculoDeXp {
+  const base = xpBase(regla, datos);
+  const cero = (nota: NotaDeAsiento): CalculoDeXp => ({ xpBase: base, xp: 0, nota });
+
+  if (regla.minMinutosDesdeCreacion !== undefined) {
+    const minutos = numeroEn(datos, 'minutosDesdeCreacion');
+    if (minutos === undefined || minutos < regla.minMinutosDesdeCreacion) return cero('muy-rapido');
+  }
+  if (regla.minAntelacionHoras !== undefined) {
+    const horas = numeroEn(datos, 'antelacionHoras');
+    if (horas === undefined || horas < regla.minAntelacionHoras) return cero('poca-antelacion');
+  }
+  if (regla.unaVezPor !== undefined && historia.yaOtorgado) return cero('ya-otorgado');
+
+  let xp = base;
+  if (regla.multiplicadorPuntual !== undefined && datos.aTiempo === true) xp *= regla.multiplicadorPuntual;
+  // Redondeo hacia abajo tolerante al error de coma flotante (35 × 1,2 = 41,999…).
+  xp = Math.floor(Math.round(xp * 1e6) / 1e6);
+
+  const conTope = aplicarLimiteDiario(xp, historia.acumuladoHoy, regla.limiteDiarioXp);
+  return conTope < xp ? { xpBase: base, xp: conTope, nota: 'limite-diario' } : { xpBase: base, xp };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import reglasV1 from '../reglas.v1.json';
 import { progresoPara, xpParaNivel } from './nivel';
-import { ConfiguracionInvalida, aplicarLimiteDiario, validarConfiguracion, xpBase } from './reglas';
+import { ConfiguracionInvalida, aplicarLimiteDiario, calcularXp, claveUnica, validarConfiguracion, xpBase } from './reglas';
 
 const P = { base: 100, exponente: 1.5 };
 
@@ -64,5 +64,53 @@ describe('reglas v1', () => {
     expect(aplicarLimiteDiario(10, 5, 5)).toBe(0);
     expect(aplicarLimiteDiario(10, 8, 5)).toBe(0);
     expect(aplicarLimiteDiario(10, 0, undefined)).toBe(10);
+  });
+});
+
+describe('condiciones de las reglas (unaVezPor, antelación, rapidez, puntualidad)', () => {
+  const cfg = validarConfiguracion(reglasV1);
+  const regla = (evento: string) => cfg.reglas.find((r) => r.evento === evento)!;
+  const completado = regla('universidad.EntregableCompletado');
+  const creado = regla('universidad.EntregableCreado');
+  const sinHistoria = { acumuladoHoy: 0, yaOtorgado: false };
+
+  it('puntualidad: un entregable M a tiempo da 35 × 1,2 = 42; tarde, 35 (sin castigo)', () => {
+    const datos = { talla: 'M', aTiempo: true, minutosDesdeCreacion: 600 };
+    expect(calcularXp(completado, datos, sinHistoria)).toEqual({ xpBase: 35, xp: 42 });
+    expect(calcularXp(completado, { ...datos, aTiempo: false }, sinHistoria)).toEqual({ xpBase: 35, xp: 35 });
+  });
+
+  it('completado menos de 10 min después de crearlo: 0 XP con nota "muy-rapido"', () => {
+    expect(calcularXp(completado, { talla: 'L', aTiempo: true, minutosDesdeCreacion: 5 }, sinHistoria)).toEqual({
+      xpBase: 100,
+      xp: 0,
+      nota: 'muy-rapido',
+    });
+    // Sin el dato no se adivina: 0.
+    expect(calcularXp(completado, { talla: 'L', aTiempo: true }, sinHistoria).xp).toBe(0);
+  });
+
+  it('registrar con 48 h o más de antelación da 3 XP; con menos, 0', () => {
+    expect(calcularXp(creado, { antelacionHoras: 72 }, sinHistoria)).toEqual({ xpBase: 3, xp: 3 });
+    expect(calcularXp(creado, { antelacionHoras: 48 }, sinHistoria).xp).toBe(3);
+    expect(calcularXp(creado, { antelacionHoras: 47 }, sinHistoria)).toEqual({ xpBase: 3, xp: 0, nota: 'poca-antelacion' });
+  });
+
+  it('unaVezPor: si la entidad ya otorgó XP, no vuelve a otorgarla', () => {
+    const datos = { talla: 'M', aTiempo: true, minutosDesdeCreacion: 600 };
+    expect(calcularXp(completado, datos, { acumuladoHoy: 0, yaOtorgado: true })).toEqual({ xpBase: 35, xp: 0, nota: 'ya-otorgado' });
+    expect(claveUnica(completado, { entregableId: 'e1' })).toBe('universidad.EntregableCompletado|e1');
+    expect(claveUnica(completado, {})).toBeUndefined();
+    expect(claveUnica(regla('estudio.DescansoCompletado'), { entregableId: 'e1' })).toBeUndefined();
+  });
+
+  it('el tope diario se aplica después de la puntualidad', () => {
+    const datos = { talla: 'L', aTiempo: true, minutosDesdeCreacion: 600 };
+    expect(calcularXp(completado, datos, { acumuladoHoy: 250, yaOtorgado: false })).toEqual({ xpBase: 100, xp: 50, nota: 'limite-diario' });
+  });
+
+  it('valida el tipo de unaVezPor', () => {
+    const malo = { ...reglasV1, reglas: [{ evento: 'a.B', atributo: 'intelecto', xp: 1, unaVezPor: 3 }] };
+    expect(() => validarConfiguracion(malo)).toThrow(/unaVezPor/);
   });
 });
