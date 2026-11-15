@@ -48,3 +48,14 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 | Operable solo con teclado (Tab, Enter, Escape) | | | | | n/a | n/a |
 | 360 / 768 / 1280 px sin desbordes | | | | | | |
 | Exportar e importar respaldo | | | | | | |
+
+### Iteración 1 — Universidad (guion de prueba manual, ~10 min por entorno)
+1. **Materias:** Universidad → Materias. Pulsar "Crear materia" vacío → error en el campo y foco en él. Crear "Cálculo II" (verde) y "Física I" (azul). Intentar "cálculo ii" → "Ya tienes una materia con ese nombre".
+2. **Registrar:** "Registrar entregable" sin llenar nada → se marcan materia (si hay varias), título y fecha. Registrar "Taller 3" de Física I para mañana 23:59, Alta, M. Registrar uno con fecha de ayer → aviso amarillo "ya pasó", se guarda como vencido.
+3. **Lista:** aparecen arriba en "Próximos vencimientos" (el vencido primero). Filtrar por Física I + Completados, ir a Inicio y volver: el filtro se conserva.
+4. **Estado:** abrir "Taller 3" → Empezar → la talla queda deshabilitada. Completar → en Progreso aparece la XP (0 con nota "completado muy rápido" si fue antes de 10 min: es la regla anti-farmeo). Reabrir y completar otra vez → no suma XP ("ya se premió antes").
+5. **Reprogramar / eliminar:** cambiar la fecha y guardar. "Eliminar entregable" → desaparece y aparece "Deshacer" 10 s; deshacer → vuelve. Repetir sin deshacer → se elimina.
+6. **Archivar:** archivar Física I → Deshacer (o Ctrl+Z en escritorio) → vuelve. Archivarla de nuevo → ya no aparece en el selector de materia al registrar; en "Archivadas" se puede restaurar.
+7. **Sin conexión:** modo avión, recargar y repetir 2 y 4: todo funciona igual, sin marcas de "pendiente".
+8. **Android:** el botón atrás regresa de la ficha del entregable a la lista; el teclado virtual no tapa el campo de título; los botones se pueden tocar sin errores (objetivos ≥ 48 px).
+

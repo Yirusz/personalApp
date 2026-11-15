@@ -13,14 +13,14 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 | Evento | XP | Atributo | Límites y condiciones | Estado |
 |---|---|---|---|---|
 | `ejemplo.RegistroCreado` | 1 | Disciplina | Máx. 5 XP/día | ✅ fundación |
-| `universidad.MateriaCreada` | 5 | Organización | Máx. 20 XP/día · una vez por `materiaId` | tope ✅ · "una vez" en iteración RPG |
-| `universidad.EntregableCreado` | 3 | Organización | Solo si se registra con ≥ 48 h de antelación · máx. 15 XP/día · una vez por `entregableId` | tope ✅ · resto en iteración RPG |
-| `universidad.EntregableCompletado` | S 10 · M 35 · L 100 | Disciplina | ×1,2 si `aTiempo` · 0 si se completa < 10 min después de crearlo · máx. 300 XP/día · una vez por `entregableId` | talla y tope ✅ · resto en iteración RPG |
+| `universidad.MateriaCreada` | 5 | Organización | Máx. 20 XP/día · una vez por `materiaId` | ✅ iteración 1 |
+| `universidad.EntregableCreado` | 3 | Organización | Solo si se registra con ≥ 48 h de antelación · máx. 15 XP/día · una vez por `entregableId` | ✅ iteración 1 |
+| `universidad.EntregableCompletado` | S 10 · M 35 · L 100 | Disciplina | ×1,2 si `aTiempo` · 0 si se completa < 10 min después de crearlo · máx. 300 XP/día · una vez por `entregableId` | ✅ iteración 1 |
 | `estudio.PomodoroCompletado` | 10 | Intelecto | 1.º–8.º del día: 100 % · 9.º–12.º: 50 % · 13.º en adelante: 0 | iteración RPG |
 | `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día | ✅ |
-| `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | iteración RPG |
-| `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | iteración RPG |
-| `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Renombrada,Archivada}`, `Entregable{Reprogramado,Reabierto,Eliminado}` | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
+| `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | regla ✅ (falta el evento: iteración 2) |
+| `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | "una vez" ✅ · racha en iteración RPG |
+| `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Renombrada,Archivada,Restaurada}`, `Entregable{Editado,Iniciado,Reprogramado,Reabierto,Eliminado}` | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
 
 **Por qué la talla es superlineal:** partir una L (100) en 3 M da 105 (≈ neutro, y cada M exige su propio registro y plazo); partir una M (35) en 3 S da 30 (pierde). Un entregable creado y completado en menos de 10 min no da nada.
 
@@ -36,7 +36,7 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 
 Con un día típico (~4 Pomodoros + 1 entregable M a tiempo ≈ 80–100 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
 
-**Orden de cálculo de un asiento** (iteración RPG completa):
+**Orden de cálculo de un asiento** (función pura `calcularXp` en `modulos/rpg/dominio/reglas.ts`; los pasos 4 y 5 llegan en la iteración RPG):
 1. Base: `xp` o `xpPorTalla[talla]` (talla desconocida → 0).
 2. Condiciones: `minMinutosDesdeCreacion`, `minAntelacionHoras`, `unaVezPor` → si no se cumplen, 0.
 3. Puntualidad: × `multiplicadorPuntual` si `aTiempo`.
@@ -44,6 +44,8 @@ Con un día típico (~4 Pomodoros + 1 entregable M a tiempo ≈ 80–100 XP), el
 5. Racha: × (1 + min(0,05 · semanas, 0,30)), salvo `sinMultiplicadorDeRacha`.
 6. Tope diario: `min(xp, limiteDiarioXp − acumuladoHoyDelTipo)`, nunca negativo.
 7. Redondeo hacia abajo a entero.
+
+Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-diario`, `ya-otorgado` (unaVezPor), `muy-rapido` (minMinutosDesdeCreacion) o `poca-antelacion` (minAntelacionHoras). Un dato que falta en el evento no se adivina: la condición se considera no cumplida (0 XP). "Una vez por" cuenta solo asientos que dieron XP: si el primero dio 0 (p. ej. por el tope diario), uno posterior sí puede premiar.
 
 **Oro:** oro disponible = ⌊XP total / 10⌋ − oro gastado. Se gasta en recompensas que define el usuario (con costo en oro). La XP no se gasta.
 

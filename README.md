@@ -2,7 +2,7 @@
 
 Productividad gamificada para la universidad: materias y entregas, calendario, Pomodoro y un progreso estilo RPG que premia cumplir. **Funciona sin conexión y tus datos se quedan en tu dispositivo** (exportables a JSON).
 
-> Estado: fase 1 (fundación) — núcleo, shell, módulo de ejemplo y núcleo del RPG. Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
+> Estado: `0.2.0` — fundación + módulo Universidad (materias y entregables). Siguiente: Calendario. Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
 
 ## Plataformas
 | Sistema | Navegadores | Instalable |
