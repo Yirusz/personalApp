@@ -24,7 +24,7 @@ import {
   marcarCumplido,
   restaurarOcurrencia,
 } from './eventos';
-import { leerFuentes, visiblesEnRango } from './fuentes';
+import { leerFuentes, visiblesEnRango, type IdDeFuente } from './fuentes';
 import { generarIcs, importarEventos, leerParaExportar, prepararImportacion } from './importar-exportar';
 import { descartarAvisos, leerBandeja, revisarRecordatorios } from './recordatorios';
 import { planificarSemana } from './revision-semanal';
@@ -143,7 +143,7 @@ describe('CA2 · elementos de otros módulos', () => {
 
     // Un registro dañado se omite y se cuenta.
     const lectura = await leerFuentes(ctx.almacen);
-    const dañada = { ...lectura, registros: new Map([...lectura.registros, ['propios', [...lectura.registros.get('propios')!, { basura: true }]]]) };
+    const dañada = { ...lectura, registros: new Map<IdDeFuente, readonly unknown[]>([...lectura.registros, ['propios', [...lectura.registros.get('propios')!, { basura: true }]]]) };
     const parcial = visiblesEnRango(dañada, rango, zonaDelUsuario());
     expect(parcial.fallos).toEqual([{ fuente: 'propios', omitidos: 1 }]);
   });
@@ -175,11 +175,11 @@ describe('CA8 · recordatorios', () => {
     const { e, ctx, notificados } = await preparar();
     // El reloj de las pruebas empieza el 14 nov a las 15:00Z.
     await crearEvento(ctx, datos({ titulo: 'Parcial', inicio: '2026-11-14T16:00:00Z', fin: '2026-11-14T18:00:00Z', recordatorios: [30, 60] }));
-    let desde = e.reloj.ahora().getTime();
+    const inicio = e.reloj.ahora().getTime();
     e.reloj.avanzar(HORA / 2); // 15:30Z: vence el de 30 min; el de 60 min venció justo en "desde" (no se notifica, queda en la bandeja)
-    desde = await revisarRecordatorios(ctx, desde);
+    const desde = await revisarRecordatorios(ctx, inicio);
     expect(notificados).toEqual(['Parcial']); // el de 30 min (15:30)
-    desde = await revisarRecordatorios(ctx, desde - HORA); // aunque se repita la ventana, no se repite
+    await revisarRecordatorios(ctx, desde - HORA); // aunque se repita la ventana, no se repite
     expect(notificados).toEqual(['Parcial']);
 
     const bandeja = await ctx.almacen.leer([EVENTOS, AVISOS], (tx) => leerBandeja(tx, e.reloj.ahora().getTime()));

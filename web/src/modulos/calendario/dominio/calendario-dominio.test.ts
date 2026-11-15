@@ -20,7 +20,7 @@ import {
 import { ocurrenciasEnRango } from './expansion';
 import { diaSemana, inicioDeSemana, semanaIso, sumarDias, sumarMeses } from './fechas';
 import { fechasDeOcurrencia, validarRecurrencia, type Recurrencia } from './recurrencia';
-import { ElementoDeAgendaInvalido, elementoExterno } from './externos';
+import { elementoExterno } from './externos';
 import {
   CompromisoInvalido,
   DuracionExcesiva,
@@ -31,6 +31,7 @@ import {
   TituloDeEventoInvalido,
   CumplimientoFueraDeTiempo,
   FechaDeEventoInvalida,
+  ElementoDeAgendaInvalido,
 } from './errores';
 
 const BOGOTA = crearZona('America/Bogota');
@@ -289,7 +290,7 @@ describe('CA3, CA4, CA9 · distribución en vistas', () => {
     const r = rango('2026-11-17T05:00:00Z', '2026-11-18T05:00:00Z');
     const os = [a, b, c].flatMap((e) => ocurrenciasEnRango(e, r, BOGOTA));
     const pos = columnasDelDia(os, '2026-11-17', BOGOTA);
-    expect(pos.map((p) => [p.elemento.eventoId, p.columna, p.columnas])).toEqual([
+    expect(pos.map((p) => [p.elemento.fuente === 'propio' && p.elemento.eventoId, p.columna, p.columnas])).toEqual([
       ['a', 0, 2],
       ['b', 1, 2],
       ['c', 0, 1],

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ControlDeActualizacion } from '../nucleo/infraestructura/service-worker';
 import { Icono, VistaDiferida } from './componentes';
 import { BarraDeshacer } from './deshacer';
-import { coincidir, hrefDe, navegar, useRuta } from './enrutador';
+import { coincidir, hrefDe, llegoPorReemplazo, navegar, useRuta } from './enrutador';
 import { ICONOS } from './iconos';
 import type { Senal } from './senal';
 import { useSenal } from './senal';
@@ -102,7 +102,8 @@ export function App({ shell }: { shell: EstadoDelShell }) {
     document.title = `${titulo} · ${s.t('app.nombre')}`;
     // Al cambiar de pantalla, el foco va al título (lectores de pantalla y teclado).
     if (primerRender.current) primerRender.current = false;
-    else principal.current?.querySelector<HTMLElement>('h1')?.focus();
+    // Si la pantalla cambió de periodo/estado por reemplazo (p. ej. ← → en el calendario), el foco se queda donde está.
+    else if (!llegoPorReemplazo()) principal.current?.querySelector<HTMLElement>('h1')?.focus();
   }, [ruta, titulo]);
 
   const activa = (r: string) => (r === '/' ? ruta === '/' : ruta === r || ruta.startsWith(`${r}/`));

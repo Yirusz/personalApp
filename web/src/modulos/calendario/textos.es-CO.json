@@ -115,6 +115,7 @@
   "calendario.permiso.preguntar": "Permitir notificaciones",
   "calendario.permiso.noSoportado": "Este navegador no muestra notificaciones: los recordatorios aparecerán dentro de Ludus.",
   "calendario.guardar": "Guardar",
+  "calendario.editar": "Editar",
   "calendario.crear": "Crear evento",
   "calendario.cancelar": "Cancelar",
   "calendario.guardado": "Cambios guardados.",

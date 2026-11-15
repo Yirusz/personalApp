@@ -113,7 +113,8 @@ export interface ContextoDeModulo {
   readonly formatos: Formatos;
   readonly diagnostico: Diagnostico;
   readonly notificaciones: Notificador;
-  navegar(ruta: string): void;
+  /** Con `reemplazar` no se agrega una entrada al historial. */
+  navegar(ruta: string, opciones?: { reemplazar?: boolean }): void;
 }
 
 export interface PropsDeVista {
