@@ -2,7 +2,7 @@
 
 Productividad gamificada para la universidad: materias y entregas, calendario, Pomodoro y un progreso estilo RPG que premia cumplir. **Funciona sin conexión y tus datos se quedan en tu dispositivo** (exportables a JSON).
 
-> Estado: `0.3.0` — fundación + Universidad + Calendario completo (recurrencia, recordatorios, .ics). Siguiente: Estudio (Pomodoro). Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
+> Estado: `0.4.0` — fundación + Universidad v2 (trabajos con estados, nota, peso y subtareas) + Calendario completo (recurrencia, recordatorios, .ics) + integración entre módulos por consulta. Siguiente: Estudio (Pomodoro). Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
 
 ## Plataformas
 | Sistema | Navegadores | Instalable |

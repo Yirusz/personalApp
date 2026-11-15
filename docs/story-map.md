@@ -173,6 +173,103 @@ Escenario: Sin conexión
   Entonces se guarda y el calendario se actualiza
 ```
 
+### Universidad v2 (iteración 3: ~21 pts, ADR-0013 y ADR-0014)
+
+Revisión pedida por el usuario: amplía U1–U6. "Entregable" pasa a llamarse **Trabajo**; la talla S/M/L se reemplaza por el tipo (ADR-0014). Los datos de la iteración 1 se migran.
+
+#### U7 — Materias con profesor y periodo · 3 pts · todas
+Como estudiante, quiero crear, editar y archivar materias con nombre, profesor, color, periodo académico y créditos opcionales, para organizar cada semestre.
+```gherkin
+Escenario: Crear y editar
+  Dado que estoy en Materias
+  Cuando creo "Física I" con profesor "Dra. Pérez", periodo "2026-2" y color azul
+  Entonces aparece agrupada bajo "Periodo 2026-2"
+  Y al editarla puedo cambiar profesor, color, periodo y créditos
+
+Escenario: Mismo nombre en otro periodo
+  Dado que tengo "Cálculo II" en 2026-1
+  Cuando creo "cálculo ii" en 2026-2
+  Entonces se crea; pero otra "Cálculo II" en 2026-2 muestra "Ya tienes una materia con ese nombre en ese periodo"
+
+Escenario: Archivar con deshacer, sin conexión
+  Dado que el dispositivo no tiene conexión
+  Cuando archivo "Física I" y pulso "Deshacer"
+  Entonces vuelve a las activas
+```
+
+#### U8 — Registrar trabajo con tipo y peso · 3 pts · todas
+```gherkin
+Escenario: Registrar
+  Dado que tengo la materia "Física I"
+  Cuando registro "Taller 3", tipo taller, mañana 23:59 (Bogotá), prioridad alta, peso 15 %, con descripción
+  Entonces queda pendiente y se publica universidad.TrabajoCreado con tipo y peso
+
+Escenario: Validación
+  Cuando dejo título vacío y escribo peso "150"
+  Entonces se marcan ambos campos a la vez y el foco va al primero
+
+Escenario: Materia archivada
+  Dado que "Física I" está archivada
+  Entonces no aparece en el selector y el dominio rechaza registrarle trabajos
+```
+
+#### U9 — Estados explícitos · 5 pts · todas
+```gherkin
+Escenario: Ciclo completo
+  Dado un trabajo pendiente que vence mañana
+  Cuando lo empiezo y luego lo marco entregado hoy
+  Entonces queda "Entregado · a tiempo" con la fecha real (Reloj inyectado)
+  Y se publica universidad.TrabajoEntregado {tipo, peso, aTiempo}
+
+Escenario: Tarde
+  Dado un trabajo que venció hace 3 horas
+  Cuando lo marco entregado
+  Entonces queda "tarde" y no recibe el bono de puntualidad
+
+Escenario: Transiciones prohibidas
+  Dado un trabajo calificado o cancelado
+  Entonces no se ofrece "Empezar" ni "Marcar entregado"; solo "Reabrir", que avisa que borra fecha de entrega y nota y lo deja en progreso
+
+Escenario: Cancelar
+  Dado un trabajo pendiente o en progreso
+  Cuando lo cancelo
+  Entonces sale de "Próximas entregas" y del calendario
+```
+
+#### U10 — Próximas entregas con indicadores y filtros · 3 pts · todas
+```gherkin
+Escenario: Agrupación
+  Dado trabajos que vencieron ayer, vencen hoy a las 23:00, el martes y en 20 días (hoy es domingo)
+  Entonces los veo en "Vencido", "Hoy", "Próximos 7 días" y "Más adelante", en ese orden
+
+Escenario: Filtros que persisten
+  Cuando filtro por "Física I" y "Calificados", voy a Inicio y vuelvo
+  Entonces el filtro se conserva
+```
+
+#### U11 — Subtareas · 3 pts · todas
+```gherkin
+Escenario: Dividir el trabajo
+  Dado el trabajo "Parcial 1"
+  Cuando agrego "Repasar cap. 3" y "Hacer ejercicios" y marco la primera
+  Entonces veo "1/2 subtareas" y la barra de progreso
+  Y no se publica ningún evento (las subtareas no dan XP)
+```
+
+#### U12 — Nota del trabajo calificado · 2 pts · todas
+```gherkin
+Escenario: Registrar nota
+  Dado un trabajo entregado
+  Cuando escribo "4,2" y pulso "Registrar nota"
+  Entonces queda calificado con "Nota 4,2" (se guarda 42) y se publica universidad.TrabajoCalificado
+
+Escenario: Nota inválida
+  Cuando escribo "5,7" o "3,75"
+  Entonces veo "La nota va de 0,0 a 5,0, con un decimal" y el foco vuelve al campo
+```
+
+**Integración (ADR-0013, ~2 pts):** fuente de calendario `universidad.entregas` (las entregas aparecen en el calendario con el color de la materia, se tachan al entregar, enlazan a la ficha; la copia vieja por eventos no se duplica) y referencias `universidad.materia` / `universidad.trabajo` para Estudio y Notas.
+
 ### Calendario (iteración 2: ~46 pts, ADR-0011)
 
 La iteración 2 amplió C1–C6 con lo que estaba después de la línea del MVP (C7–C9) y más. Historias como se implementaron (todas ✅, plataformas: todas):

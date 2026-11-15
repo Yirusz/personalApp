@@ -1,6 +1,6 @@
 # ADR-0005: Diseño de la gamificación v1
 
-Estado: aceptado (el usuario delegó la decisión; se ajusta con el uso)
+Estado: aceptado (el usuario delegó la decisión; se ajusta con el uso) · "Esfuerzo declarado" modificado por ADR-0014
 Fecha: 2026-11-14
 
 ## Contexto
