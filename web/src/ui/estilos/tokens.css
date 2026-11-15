@@ -1,0 +1,68 @@
+/*
+ * Design tokens de Ludus (ADR-0007). Los componentes SOLO usan estas variables.
+ * Esquema claro/oscuro con light-dark(): sigue al sistema salvo que el usuario
+ * fije uno (data-esquema). El estilo "pixel" futuro = otra hoja que redefine tokens.
+ * Contrastes verificados (WCAG AA): texto ≥ 15:1, texto tenue ≥ 5,9:1, acento ≥ 6:1.
+ */
+:root {
+  color-scheme: light dark;
+
+  --color-fondo: light-dark(#f6f8f7, #111614);
+  --color-superficie: light-dark(#ffffff, #1a211e);
+  --color-superficie-2: light-dark(#ebf0ed, #222b27);
+  --color-texto: light-dark(#17201c, #e6ece9);
+  --color-texto-tenue: light-dark(#55625c, #9aa8a1);
+  --color-borde: light-dark(#d3dcd7, #2f3a35);
+  --color-acento: light-dark(#1d6b4a, #6fd0a2);
+  --color-sobre-acento: light-dark(#ffffff, #0b1f16);
+  --color-acento-suave: light-dark(#dcefe5, #1d3b2e);
+  --color-oro: light-dark(#8a5a00, #f2c14e);
+  --color-peligro: light-dark(#b3261e, #ffb4ab);
+  --color-alerta-fondo: light-dark(#fff4d6, #2c2412);
+  --color-alerta-texto: light-dark(#6b4a00, #f2d38a);
+  --color-foco: light-dark(#0b57d0, #a8c7fa);
+
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;
+  --fuente-mono: ui-monospace, 'Cascadia Mono', 'Ubuntu Mono', 'Roboto Mono', monospace;
+  --texto-base: 1rem;
+  --texto-pequeno: 0.875rem;
+  --texto-titulo: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem);
+
+  --espacio-1: 0.25rem;
+  --espacio-2: 0.5rem;
+  --espacio-3: 0.75rem;
+  --espacio-4: 1rem;
+  --espacio-5: 1.5rem;
+  --espacio-6: 2rem;
+
+  --radio: 0.5rem;
+  --radio-grande: 1rem;
+  --borde-ancho: 1px;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.08), 0 2px 8px rgb(0 0 0 / 0.06);
+  --transicion: 150ms ease-out;
+
+  /* Objetivo mínimo de clic/toque (WCAG 2.2: 24 px; táctil: 48 px, ver abajo). */
+  --tamano-objetivo: 2.5rem;
+  --ancho-nav-lateral: 5.5rem;
+  --alto-nav-inferior: 4rem;
+}
+
+:root[data-esquema='claro'] {
+  color-scheme: light;
+}
+
+:root[data-esquema='oscuro'] {
+  color-scheme: dark;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --tamano-objetivo: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transicion: 0ms;
+  }
+}
