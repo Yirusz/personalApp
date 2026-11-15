@@ -14,7 +14,7 @@ Productividad gamificada para la universidad: materias y entregas, calendario, P
 Detalles, instalación y checklist: [`docs/plataformas.md`](docs/plataformas.md).
 
 ## Usar la app
-- **Publicada:** al hacer push a `main`, el workflow `Pages` la publica en `https://yirusz.github.io/presonalApp/` (activar una vez: *Settings → Pages → Source: GitHub Actions*).
+- **Publicada:** al hacer push a `main`, el workflow `Pages` la publica en `https://yirusz.github.io/personalApp/` (activar una vez: *Settings → Pages → Source: GitHub Actions*).
 - Instalar desde el navegador ("Instalar" / "Agregar a la pantalla principal").
 - En **Ajustes**: proteger los datos y exportar respaldos.
 
