@@ -105,8 +105,9 @@ Archivo `web/src/nucleo/contrato.ts`. Cada módulo exporta por defecto `definirM
 | `migraciones[]` | Esquema propio, versiones 1, 2, 3… | consecutivas; nunca se editan |
 | `eventos` | Catálogo de eventos que publica, con versión y descripción | tipo `<id>.NombreEnPasado` |
 | `suscripciones?(ctx)` | Manejadores de eventos (propios o ajenos) | id único; tipos bien formados |
+| `alIniciar?(ctx)` | Tarea mientras la app está abierta, en cualquier pantalla (recordatorios, temporizadores); devuelve cómo detenerla | errores aislados (Diagnóstico) |
 
-Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, navegar }`. `ctx.almacen` solo ve los almacenes del módulo.
+Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, notificaciones, navegar }`. `navegar(ruta, { reemplazar: true })` no agrega una entrada al historial ni mueve el foco (para recorrer periodos sin llenar el botón atrás). `ctx.almacen` solo ve los almacenes del módulo.
 
 ### Cómo agregar un módulo (sin tocar los existentes)
 1. Crear `web/src/modulos/<id>/modulo.ts` con su `definirModulo`.
@@ -115,6 +116,7 @@ Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloI
 4. `npm run check`. El registro y la prueba de arquitectura avisan si algo rompe el contrato.
 
 ### Piezas compartidas para módulos
+- `nucleo/dominio/zona-horaria.ts`: hora civil ↔ UTC con `Intl` (sin depender de la zona del dispositivo); la usan `formatos` y el dominio del Calendario.
 - `nucleo/dominio/agenda.ts`: `ElementoDeAgenda` (lenguaje publicado para el Calendario) y la paleta `COLORES_CATEGORICOS` (tokens `--color-cat-*`, marcas con `data-color` y `.marca-color`).
 - `ctx.formatos`: además de fecha/hora/número, `entradaLocal` / `desdeEntradaLocal` (valor de `<input type="datetime-local">` siempre en hora de Bogotá, sin depender de la zona del dispositivo) y `relativo` ("mañana", "dentro de 3 horas").
 - `ui/deshacer.tsx`: `ofrecerDeshacer({ mensaje, deshacer?, confirmar?, ocultar? })` muestra la barra "Deshacer" del shell durante 10 s (también Ctrl+Z). Las acciones diferidas (`confirmar`) se ejecutan al vencer el plazo o al pasar la app a segundo plano.
@@ -167,7 +169,8 @@ sequenceDiagram
 | Persistencia | `pedirAlmacenamientoPersistente` | Aviso en Ajustes: "exporta respaldos" |
 | Archivos | `descargarArchivo`, `leerArchivoComoTexto` | Funciona en todos los navegadores |
 | Sin conexión | Service Worker | Sin SW (p. ej. HTTP por IP), la app funciona mientras esté abierta |
-| Notificaciones / vibración | `detectarCapacidades` (iteración Estudio) | Solo aviso en pantalla |
+| Notificaciones | `Notificador` (`ctx.notificaciones`) / `notificadorDelNavegador` vía Service Worker (Android no permite `new Notification()`) | Solo bandeja dentro de la app; con la app cerrada no hay aviso (ADR-0004) |
+| Vibración | `detectarCapacidades` (iteración Estudio) | Solo aviso en pantalla |
 
 ## 8. Decisiones relacionadas
-ADR-0002 (sincronización), 0004 (PWA), 0008 (stack), 0009 (almacenamiento y eventos), 0010 (composición y rutas).
+ADR-0002 (sincronización), 0004 (PWA), 0008 (stack), 0009 (almacenamiento y eventos), 0010 (composición y rutas), 0011 (alcance del Calendario), 0012 (recurrencia e .ics propios).
