@@ -6,6 +6,8 @@
   "app.cargando": "Cargando…",
   "app.reintentar": "Reintentar",
   "app.cerrar": "Cerrar",
+  "app.deshacer": "Deshacer",
+  "app.deshacerFallo": "No se pudo completar la última acción. Revisa Diagnóstico para ver el detalle.",
   "app.errorGenerico": "Algo salió mal.",
   "app.sinConexion": "Sin conexión. Ludus funciona igual: todo se guarda en este dispositivo.",
   "app.actualizacionDisponible": "Hay una versión nueva de Ludus.",

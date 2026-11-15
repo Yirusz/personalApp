@@ -44,4 +44,35 @@ describe('formatos', () => {
   it('formatea números con separadores colombianos', () => {
     expect(f.numero(1234.5)).toBe('1.234,5');
   });
+
+  it('convierte un instante UTC al valor de <input type="datetime-local"> en hora de Bogotá', () => {
+    expect(f.entradaLocal('2026-11-21T04:59:00Z')).toBe('2026-11-20T23:59');
+    expect(f.entradaLocal('2026-01-01T05:00:00Z')).toBe('2026-01-01T00:00');
+  });
+
+  it('interpreta la hora escrita como hora de Bogotá, sin importar la zona del dispositivo', () => {
+    expect(f.desdeEntradaLocal('2026-11-20T23:59')).toBe('2026-11-21T04:59:00.000Z');
+    expect(f.desdeEntradaLocal('2026-11-20T23:59:30')).toBe('2026-11-21T04:59:30.000Z');
+    // Ida y vuelta.
+    expect(f.entradaLocal(f.desdeEntradaLocal('2026-03-08T02:30')!)).toBe('2026-03-08T02:30');
+  });
+
+  it('rechaza valores de fecha inválidos o vacíos', () => {
+    for (const malo of ['', 'mañana', '2026-02-30T10:00', '2026-11-20', '2026-11-20T25:00']) {
+      expect(f.desdeEntradaLocal(malo), malo).toBeNull();
+    }
+  });
+
+  it('respeta zonas con horario de verano (prueba de la conversión genérica)', () => {
+    const madrid = crearFormatos('Europe/Madrid');
+    expect(madrid.desdeEntradaLocal('2026-07-01T12:00')).toBe('2026-07-01T10:00:00.000Z'); // UTC+2
+    expect(madrid.desdeEntradaLocal('2026-12-01T12:00')).toBe('2026-12-01T11:00:00.000Z'); // UTC+1
+  });
+
+  it('describe tiempos relativos en español', () => {
+    const ahora = '2026-11-14T15:00:00Z';
+    expect(f.relativo('2026-11-14T18:00:00Z', ahora)).toBe('dentro de 3 horas');
+    expect(f.relativo('2026-11-16T15:00:00Z', ahora)).toBe('pasado mañana');
+    expect(f.relativo('2026-11-14T14:30:00Z', ahora)).toBe('hace 30 minutos');
+  });
 });
