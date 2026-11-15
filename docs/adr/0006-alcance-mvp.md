@@ -1,6 +1,6 @@
 # ADR-0006: Alcance del MVP
 
-Estado: aceptado
+Estado: aceptado; el alcance del Calendario lo modifica ADR-0011
 Fecha: 2026-11-14
 
 ## Contexto

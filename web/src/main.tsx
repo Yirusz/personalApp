@@ -17,6 +17,7 @@ import { crearFormatos, crearTraductor } from './nucleo/i18n/traductor';
 import { AlmacenIndexedDb, NUCLEO } from './nucleo/infraestructura/almacen-indexeddb';
 import { destinoEnAlmacen, RegistroDeDiagnostico } from './nucleo/infraestructura/diagnostico';
 import { aleatorioCriptografico, relojDelSistema } from './nucleo/infraestructura/reloj-del-sistema';
+import { notificadorDelNavegador } from './nucleo/infraestructura/notificaciones';
 import { registrarServiceWorker, type EstadoDelServiceWorker } from './nucleo/infraestructura/service-worker';
 import { aplicarApariencia, leerApariencia } from './ui/apariencia';
 import { App, type EstadoDelShell } from './ui/App';
@@ -62,6 +63,7 @@ async function iniciar(raiz: HTMLElement): Promise<void> {
           t,
           formatos,
           diagnostico,
+          notificaciones: notificadorDelNavegador,
           navegar,
         };
         contextos.set(moduloId, ctx);
@@ -74,6 +76,17 @@ async function iniciar(raiz: HTMLElement): Promise<void> {
       for (const suscripcion of modulo.suscripciones?.(contextoDe(modulo.id)) ?? []) bus.registrar(modulo.id, suscripcion);
     }
     await bus.iniciar();
+
+    // Tareas de los módulos mientras la app está abierta (recordatorios, temporizadores).
+    for (const modulo of registro.modulos) {
+      if (!modulo.alIniciar) continue;
+      try {
+        const detener = modulo.alIniciar(contextoDe(modulo.id));
+        addEventListener('pagehide', detener, { once: true });
+      } catch (error) {
+        diagnostico.registrar('error', modulo.id, 'Falló la tarea de inicio del módulo', error);
+      }
+    }
 
     let estadoSw: EstadoDelServiceWorker = 'registrando';
     registrarServiceWorker(

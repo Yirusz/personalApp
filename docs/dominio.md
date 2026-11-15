@@ -107,55 +107,72 @@ classDiagram
 
 ## 3. Contexto Calendario
 
-**Lenguaje:** *Evento de calendario* (algo con hora que el usuario agenda), *Elemento de agenda* (lo que otros módulos publican), *Recordatorio*, *Revisión semanal*.
+**Lenguaje:** *Evento* (algo que el usuario agenda), *Serie* (evento recurrente), *Ocurrencia* (una aparición de la serie, identificada por su **fecha original**), *Excepción* (ocurrencia cancelada o modificada), *Elemento externo* (lo que publican otros módulos con `datos.agenda`), *Recordatorio*, *Aviso* (un recordatorio vencido de una ocurrencia), *Bloque de compromiso*, *Revisión semanal*. Implementado en la iteración 2 (`web/src/modulos/calendario/`, ADR-0011 y ADR-0012).
 
 ```mermaid
 classDiagram
   class EventoDeCalendario {
     <<Agregado>>
     +Id id
+    +string uid
     +Titulo titulo
-    +Intervalo intervalo
-    +Recordatorio recordatorio
+    +string lugar
     +string notas
-    +reprogramar(intervalo)
-    +cambiarRecordatorio(r)
-  }
-  class Intervalo {
-    <<VO>>
-    +Instante inicio
-    +Instante fin
+    +ColorCategorico color
     +bool todoElDia
+    +Intervalo inicio, fin
+    +int[] recordatorios
+    +Recurrencia? recurrencia
+    +Map~fecha, Excepcion~ excepciones
+    +bool compromiso
+    +fecha[] cumplidas
+    +editar(datos)
+    +cancelarOcurrencia(fecha)
+    +editarOcurrencia(fecha, datos)
+    +marcarCumplida(fecha)
   }
-  class Recordatorio {
+  class Recurrencia {
     <<VO>>
-    +int minutosAntes
+    +diaria|semanal|mensual frecuencia
+    +int intervalo
+    +DiaSemana[] dias
+    +nunca|fecha|conteo fin
   }
-  class ElementoDeAgendaProyectado {
+  class Excepcion {
+    <<VO>>
+    +bool cancelada
+    +titulo, lugar, notas, inicio, fin
+  }
+  class Ocurrencia {
+    <<Calculada>>
+    +fecha clave
+    +inicioMs, finMs
+    +bool modificada, cumplida
+  }
+  class ElementoExterno {
     <<Proyección>>
-    +string id
+    +string clave (modulo:id)
     +string origen
-    +string titulo
-    +Instante inicio
-    +Instante fin
-    +string estado
+    +ElementoDeAgenda agenda
   }
   class RevisionSemanal {
     <<Agregado>>
     +SemanaIso semana
-    +Instante hechaEn
   }
-  EventoDeCalendario *-- Intervalo
-  EventoDeCalendario *-- Recordatorio
+  EventoDeCalendario *-- Recurrencia
+  EventoDeCalendario *-- Excepcion
+  EventoDeCalendario ..> Ocurrencia : se expande en un rango
 ```
 
 | Tipo | Elementos |
 |---|---|
-| Agregados | `EventoDeCalendario`, `RevisionSemanal` (id = semana ISO, p. ej. `2026-W47`) |
-| Value objects | `Intervalo` (fin > inicio; ≤ 14 días; `todoElDia` usa fechas locales), `Recordatorio` (0–10 080 min antes), `SemanaIso` |
-| Proyecciones | `ElementoDeAgendaProyectado`: se construye desde cualquier evento con `datos.agenda` (suscripción `calendario.agenda`, historial completo). |
-| Invariantes | Intervalo válido. Una revisión por semana. Los elementos proyectados son de solo lectura (se editan en su módulo de origen). |
-| Eventos | `calendario.EventoCreado {eventoId, inicio, fin, agenda}` · `EventoReprogramado` · `EventoEliminado` · `SemanaPlanificada {semana}` |
+| Agregados | `EventoDeCalendario` (con sus excepciones y cumplimientos), `RevisionSemanal` (id = semana ISO, p. ej. `2026-W47`) |
+| Value objects | `Intervalo` (con hora: instantes UTC, fin > inicio; todo el día: fechas `AAAA-MM-DD` sin zona, fin inclusivo ≥ inicio; ≤ 14 días), `Recurrencia` (intervalo 1–99, conteo 1–999, ≥ 1 día si es semanal), `Recordatorios` (0–5, de 0 min a 4 semanas antes), `SemanaIso` |
+| Calculados (nunca se guardan) | `Ocurrencia`: la serie se expande solo para el rango visible, en hora civil de Bogotá. `Aviso`: momento = inicio − minutos. |
+| Proyecciones | `agenda`: suscripción `calendario.agenda` a `*` con historial completo; upsert por `<modulo>:<agenda.id>`, borra con `estado: "eliminado"`; los datos inválidos se omiten y se anotan en Diagnóstico. |
+| Invariantes | Intervalo válido. Semanal: la primera ocurrencia es el primer día elegido desde el inicio. Una excepción solo existe para una fecha que es ocurrencia; al editar la serie se descartan las que dejan de serlo. Bloque de compromiso: con hora, 15 min–8 h; se marca cumplido una vez por ocurrencia, desde que empieza hasta 48 h después de terminar. Una revisión por semana. Los elementos externos son de solo lectura. |
+| Eventos (v1) | `calendario.EventoCreado {eventoId, recurrente, compromiso}` · `EventoEditado {eventoId}` · `EventoEliminado {eventoId}` · `OcurrenciaModificada {eventoId, ocurrencia, accion: editada|cancelada|restaurada}` · `EventoMarcadoCumplido {eventoId, ocurrencia, ocurrenciaId, minutos}` · `CalendarioImportado {creados, actualizados}` · `SemanaPlanificada {semana}`. Los eventos propios **no** llevan `datos.agenda` (el Calendario no se proyecta a sí mismo). |
+| Fuentes | Cada fuente (propios, externos) se lee por separado: si una falla o tiene registros dañados, se muestra el resto con un aviso. |
 
 ## 4. Contexto Estudio
 

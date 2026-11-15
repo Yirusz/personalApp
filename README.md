@@ -2,7 +2,7 @@
 
 Productividad gamificada para la universidad: materias y entregas, calendario, Pomodoro y un progreso estilo RPG que premia cumplir. **Funciona sin conexión y tus datos se quedan en tu dispositivo** (exportables a JSON).
 
-> Estado: `0.2.0` — fundación + módulo Universidad (materias y entregables). Siguiente: Calendario. Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
+> Estado: `0.3.0` — fundación + Universidad + Calendario completo (recurrencia, recordatorios, .ics). Siguiente: Estudio (Pomodoro). Ver [`docs/plan-maestro.md`](docs/plan-maestro.md).
 
 ## Plataformas
 | Sistema | Navegadores | Instalable |
@@ -14,7 +14,7 @@ Productividad gamificada para la universidad: materias y entregas, calendario, P
 Detalles, instalación y checklist: [`docs/plataformas.md`](docs/plataformas.md).
 
 ## Usar la app
-- **Publicada:** al hacer push a `main`, el workflow `Pages` la publica en `https://yirusz.github.io/presonalApp/` (activar una vez: *Settings → Pages → Source: GitHub Actions*).
+- **Publicada:** al hacer push a `main`, el workflow `Pages` la publica en `https://yirusz.github.io/personalApp/` (activar una vez: *Settings → Pages → Source: GitHub Actions*).
 - Instalar desde el navegador ("Instalar" / "Agregar a la pantalla principal").
 - En **Ajustes**: proteger los datos y exportar respaldos.
 

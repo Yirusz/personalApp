@@ -70,7 +70,7 @@ function politicaDeSeguridad(): Plugin {
 }
 
 export default defineConfig({
-  // Rutas relativas: la misma build sirve en GitHub Pages (/presonalApp/), en un subdirectorio o en la raíz.
+  // Rutas relativas: la misma build sirve en GitHub Pages (/personalApp/), en un subdirectorio o en la raíz.
   base: './',
   define: {
     __LUDUS_VERSION__: JSON.stringify(paquete.version),

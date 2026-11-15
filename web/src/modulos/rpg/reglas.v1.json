@@ -60,6 +60,13 @@
       "limiteDiarioXp": 24
     },
     {
+      "evento": "calendario.EventoMarcadoCumplido",
+      "xp": 15,
+      "atributo": "disciplina",
+      "limiteDiarioXp": 45,
+      "unaVezPor": "ocurrenciaId"
+    },
+    {
       "evento": "calendario.SemanaPlanificada",
       "xp": 30,
       "atributo": "organizacion",

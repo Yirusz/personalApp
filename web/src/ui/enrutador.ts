@@ -10,8 +10,18 @@ export function rutaActual(): string {
   return ruta.startsWith('/') ? ruta : '/';
 }
 
-export function navegar(ruta: string): void {
-  if (rutaActual() !== ruta) location.hash = ruta;
+/** Con `reemplazar`, no agrega una entrada al historial (útil al recorrer periodos: el botón atrás no se llena). */
+export function navegar(ruta: string, opciones: { reemplazar?: boolean } = {}): void {
+  if (rutaActual() === ruta) return;
+  if (opciones.reemplazar) {
+    history.replaceState({ ludusReemplazo: true }, '', hrefDe(ruta));
+    dispatchEvent(new HashChangeEvent('hashchange'));
+  } else location.hash = ruta;
+}
+
+/** ¿La ruta actual llegó por `navegar(..., { reemplazar: true })`? (el shell no mueve el foco). */
+export function llegoPorReemplazo(): boolean {
+  return (history.state as { ludusReemplazo?: boolean } | null)?.ludusReemplazo === true;
 }
 
 export function hrefDe(ruta: string): string {

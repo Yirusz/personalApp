@@ -11,12 +11,16 @@ import { registrar } from './ejemplo/aplicacion/registrar';
 import { RegistroInvalido } from './ejemplo/dominio/registro';
 import ejemplo from './ejemplo/modulo';
 import { leerPerfil, leerUltimosAsientos } from './rpg/aplicacion/registrar-experiencia';
+import { notificadorNulo } from '../nucleo/infraestructura/notificaciones';
 import rpg from './rpg/modulo';
 import { completarEntregable } from './universidad/aplicacion/completar-entregable';
 import { crearMateria } from './universidad/aplicacion/crear-materia';
 import { reabrirEntregable } from './universidad/aplicacion/reabrir-entregable';
 import { registrarEntregable } from './universidad/aplicacion/registrar-entregable';
 import universidad from './universidad/modulo';
+import calendario from './calendario/modulo';
+import { leerFuentes, visiblesEnRango } from './calendario/aplicacion/fuentes';
+import { zonaDelUsuario } from './calendario/aplicacion/comun';
 
 const formatos = crearFormatos();
 
@@ -29,6 +33,7 @@ function contexto(e: Entorno, moduloId: string): ContextoDeModulo {
     t: crearTraductor({}),
     formatos,
     diagnostico: e.diagnostico,
+    notificaciones: notificadorNulo,
     navegar: () => undefined,
   };
 }
@@ -146,5 +151,29 @@ describe('Universidad → eventos → RPG (reglas de reglas.v1.json)', () => {
     const { ctx, perfil } = await appUniversidad();
     for (const nombre of ['A', 'B', 'C', 'D', 'E']) await crearMateria(ctx, { nombre, color: 'gris', creditos: null });
     expect((await perfil())!.xpTotal).toBe(20); // 6 materias × 5, tope 20/día
+  });
+});
+
+describe('Universidad → datos.agenda → Calendario (sin que se conozcan)', () => {
+  it('las entregas registradas ANTES de instalar el Calendario aparecen (historial), con su color y su estado', async () => {
+    // 1. Solo Universidad: se registra una entrega.
+    const antes = await crearEntorno([universidad]);
+    const u = contexto(antes, 'universidad');
+    const materia = await crearMateria(u, { nombre: 'Física I', color: 'verde', creditos: null });
+    const t = await registrarEntregable(u, { materiaId: materia.id, titulo: 'Taller 3', tipo: 'tarea', venceEn: '2026-11-21T04:59:00Z', prioridad: 'alta', talla: 'M' });
+
+    // 2. Se "instala" el Calendario (nueva versión de la app con el módulo) y su suscripción procesa el historial.
+    const e = await antes.reabrir([universidad, calendario]);
+    for (const s of calendario.suscripciones!(contexto(e, 'calendario'))) e.bus.registrar('calendario', s);
+    await e.bus.iniciar();
+    await e.bus.procesarPendientes();
+    const rango = { desdeMs: Date.parse('2026-11-16T05:00:00Z'), hastaMs: Date.parse('2026-11-23T05:00:00Z') };
+    const ver = async () => visiblesEnRango(await leerFuentes(e.almacen.paraModulo('calendario')), rango, zonaDelUsuario()).elementos;
+    expect(await ver()).toMatchObject([{ fuente: 'externo', origen: 'universidad', titulo: 'Taller 3', color: 'verde', fechaInicio: '2026-11-20', hecho: false }]);
+
+    // 3. Completar en Universidad lo marca como hecho en el Calendario.
+    await completarEntregable(contexto(e, 'universidad'), t.id);
+    await e.bus.procesarPendientes();
+    expect((await ver())[0]).toMatchObject({ hecho: true });
   });
 });

@@ -8,20 +8,20 @@ El **backbone** (fila superior) son las actividades del usuario en orden. Debajo
 
 | Organizar mi semestre | Planear mi semana | Estudiar | Cumplir y entregar | Ver mi progreso y premiarme | Tomar notas | Cuidar mis datos |
 |---|---|---|---|---|---|---|
-| U1 Crear materia ✅ | C1 Agenda de próximos días | E1 Pomodoro con fases | U4 Avanzar estado de un entregable ✅ | R1 Reglas v1 completas | | F1 Exportar/importar ✅ |
-| U2 Editar/archivar materia ✅ | C3 Crear/editar evento | E2 Configurar Pomodoro | U5 Lista y "próximos vencimientos" ✅ | R2 Racha semanal con comodines | | F2 Diagnóstico ✅ |
-| U3 Registrar entregable ✅ | C4 Entregables en el calendario | E3 Aviso al terminar (app visible) | U6 Reprogramar/eliminar ✅ | R3 Logros básicos | | F3 Proteger datos (persistencia) ✅ |
-| | C2 Vista semana | E4 Sesiones y estadísticas | | R4 Recompensas y canje con oro | | |
-| | C5 Recordatorios al abrir | E5 Pomodoro resistente a congelamiento | | R5 Avisos de nivel y logro | | |
-| | C6 Revisión semanal | | | | | |
+| U1 Crear materia ✅ | C1 Agenda de próximos días ✅ | E1 Pomodoro con fases | U4 Avanzar estado de un entregable ✅ | R1 Reglas v1 completas | | F1 Exportar/importar ✅ |
+| U2 Editar/archivar materia ✅ | C3 Crear/editar evento ✅ | E2 Configurar Pomodoro | U5 Lista y "próximos vencimientos" ✅ | R2 Racha semanal con comodines | | F2 Diagnóstico ✅ |
+| U3 Registrar entregable ✅ | C4 Entregables en el calendario ✅ | E3 Aviso al terminar (app visible) | U6 Reprogramar/eliminar ✅ | R3 Logros básicos | | F3 Proteger datos (persistencia) ✅ |
+| | C2 Vista semana ✅ | E4 Sesiones y estadísticas | | R4 Recompensas y canje con oro | | |
+| | C5 Recordatorios al abrir ✅ | E5 Pomodoro resistente a congelamiento | | R5 Avisos de nivel y logro | | |
+| | C6 Revisión semanal ✅ | | | | | |
 | **— — — — — — — — LÍNEA DEL MVP — — — — — — — —** | | | | | | |
-| U7 Horario semanal de clases | C7 Vista mes | E6 Técnicas extra (52/17, flowtime) | U8 Subtareas con checklist | R6 Atributos con niveles propios | N1 Nota Markdown | S1 Sincronizar con Syncthing |
-| U8 Notas de calificaciones | C8 Eventos recurrentes | E7 Estadísticas por rango | | R7 Tema pixel art 8/16 bits | N2 Etiquetas | S2 Respaldo automático a carpeta |
-| | C9 Exportar .ics | E8 Sonidos/ruido de fondo | | R8 Recalcular XP con reglas nuevas | N3 Búsqueda | |
+| U7 Horario semanal de clases (cubierto por C8 ✅) | C7 Vista mes ✅ | E6 Técnicas extra (52/17, flowtime) | U8 Subtareas con checklist | R6 Atributos con niveles propios | N1 Nota Markdown | S1 Sincronizar con Syncthing |
+| U8 Notas de calificaciones | C8 Eventos recurrentes ✅ | E7 Estadísticas por rango | | R7 Tema pixel art 8/16 bits | N2 Etiquetas | S2 Respaldo automático a carpeta |
+| | C9 Exportar e importar .ics ✅ | E8 Sonidos/ruido de fondo | | R8 Recalcular XP con reglas nuevas | N3 Búsqueda | |
 | | | | | | N4 Vincular nota ↔ materia/entregable | |
 | | | | | | O1 Exportar/importar notas a Obsidian (.md) | |
 
-✅ = construido (fase 1: fundación; iteración 1: Universidad).
+✅ = construido (fase 1: fundación; iteración 1: Universidad; iteración 2: Calendario completo, que adelantó C7–C9 por ADR-0011).
 
 **Totales MVP:** Universidad 15 · Calendario 19 · Estudio 15 · RPG 18 → **67 puntos**.
 
@@ -173,7 +173,29 @@ Escenario: Sin conexión
   Entonces se guarda y el calendario se actualiza
 ```
 
-### Calendario (19 pts)
+### Calendario (iteración 2: ~46 pts, ADR-0011)
+
+La iteración 2 amplió C1–C6 con lo que estaba después de la línea del MVP (C7–C9) y más. Historias como se implementaron (todas ✅, plataformas: todas):
+
+| Historia | Pts | Incluye |
+|---|---|---|
+| CA1 Eventos propios | 5 | Título, inicio–fin o todo el día (fecha sin zona), lugar, notas, color; eliminar con deshacer (C3) |
+| CA2 Fuentes de otros módulos | 3 | `datos.agenda` de solo lectura, diferenciado; tolerante a fallos (C4) |
+| CA3 Agenda | 3 | 14 días agrupados por día local (C1) |
+| CA4 Día y semana | 5 | Cuadrícula horaria; 7 columnas desde 720 px, un día a la vez en angosto; ← → (C2) |
+| CA5 Recurrencia | 5 | Diaria, semanal con días, mensual; cada N; fin por fecha o veces (C8) |
+| CA6 Borrar solo una ocurrencia | 2 | Con deshacer |
+| CA7 Editar solo una ocurrencia | 3 | Y "volver a la original" |
+| CA8 Recordatorios | 5 | Varios por evento; bandeja al abrir; notificación con la app abierta; garantías por plataforma (C5) |
+| CA9 Mes | 5 | Puntos de color en 360 px; teclado tipo cuadrícula (C7) |
+| CA10 Exportar .ics | 3 | Con RRULE, EXDATE, VALARM y, opcional, los elementos de otros módulos (C9) |
+| CA11 Importar .ics | 5 | Vista previa, avisos, sin duplicar por UID |
+| CA12 Bloque de compromiso | 2 | `EventoMarcadoCumplido` → XP con tope diario |
+| C6 Revisión semanal | 2 | Sin cambios respecto a la historia original |
+
+Criterios Dado/Cuando/Entonces: los de C1–C6 abajo siguen vigentes; los nuevos están como pruebas en `web/src/modulos/calendario/**/*.test.ts` (nombradas por historia).
+
+#### Historias originales (C1–C6)
 
 #### C1 — Agenda de próximos días · 3 pts · todas
 Como estudiante, quiero ver una lista por día de mis eventos y vencimientos de los próximos 14 días, para saber qué viene.

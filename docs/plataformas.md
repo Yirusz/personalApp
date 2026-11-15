@@ -59,3 +59,17 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 7. **Sin conexión:** modo avión, recargar y repetir 2 y 4: todo funciona igual, sin marcas de "pendiente".
 8. **Android:** el botón atrás regresa de la ficha del entregable a la lista; el teclado virtual no tapa el campo de título; los botones se pueden tocar sin errores (objetivos ≥ 48 px).
 
+### Iteración 2 — Calendario (guion de prueba manual, ~15 min por entorno)
+1. **Evento y validación:** Calendario → "+ Nuevo evento". Crear sin título → error en el campo. Poner el fin antes del inicio → "El final debe ser posterior al inicio".
+2. **Serie:** "Física I" mañana 7:00–9:00, Repetir cada semana, lunes y miércoles, termina después de 10 veces, recordatorio 30 min. Aparece en agenda, día, semana y mes a las 7:00.
+3. **Todo el día:** "Receso" del 31 dic al 1 ene → en el mes aparece en ambos días (cambio de año).
+4. **Ocurrencias:** abrir una clase → "Borrar solo esta" → "Deshacer". "Editar solo esta" → cambiar el título → se ve ✎ y "volver a la original".
+5. **Otros módulos:** registrar una entrega en Universidad → aparece en el calendario con borde punteado, 🔒 y "solo lectura"; al completarla se tacha.
+6. **Vistas y teclado (escritorio):** ← → cambian de semana; T vuelve a hoy; N crea un evento. En el mes: Tab hasta la cuadrícula, flechas, Re Pág/Av Pág y Enter abre el día.
+7. **360 px / Android:** el mes muestra puntos de color; la semana se ve un día a la vez con la tira L–D. El botón atrás sale del calendario (no recorre las semanas visitadas).
+8. **Recordatorios:** crear un evento que empiece en 5 min con recordatorio de 10 min. Con permiso: notificación del sistema con Ludus abierto. Ir a Inicio → bandeja "Recordatorios" → Descartar. En Android, cerrar Ludus antes de la hora: no hay notificación (esperado, ADR-0004); al abrir aparece en la bandeja.
+9. **Bloque de compromiso:** evento marcado como bloque que ya empezó → "Marcar cumplido" → Progreso suma 15 XP; desmarcar y volver a marcar no suma.
+10. **.ics:** Importar el .ics de Moodle o Google → vista previa con avisos → Importar; reimportar el mismo archivo → "0 nuevos y N actualizados". Exportar → abrir el archivo en Google Calendar o en el calendario del teléfono: las alarmas sí suenan con Ludus cerrado.
+11. **Sin conexión:** modo avión, recargar el calendario y crear un evento: todo funciona.
+12. **Revisión semanal:** en la vista semana o en Inicio, "Semana planificada" → "Planificada ✓" y +30 XP una sola vez.
+

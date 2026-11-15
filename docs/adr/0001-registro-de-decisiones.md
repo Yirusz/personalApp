@@ -26,8 +26,10 @@ Opción 1. Un archivo por decisión, `NNNN-titulo-con-guiones.md`, con la planti
 | 0003 | Obsidian fuera del MVP; notas en Markdown con frontmatter |
 | 0004 | Cliente: PWA pura |
 | 0005 | Diseño de la gamificación v1 |
-| 0006 | Alcance del MVP |
+| 0006 | Alcance del MVP (alcance del Calendario modificado por 0011) |
 | 0007 | Nombre "Ludus" y estilo visual minimalista con temas intercambiables |
 | 0008 | Stack del frontend |
 | 0009 | Almacenamiento local y eventos de dominio confiables |
 | 0010 | Composición de módulos y enrutamiento |
+| 0011 | El Calendario completo entra al MVP (modifica 0006) |
+| 0012 | Recurrencia e iCalendar (.ics) con código propio |

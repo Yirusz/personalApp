@@ -18,7 +18,8 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 | `universidad.EntregableCompletado` | S 10 · M 35 · L 100 | Disciplina | ×1,2 si `aTiempo` · 0 si se completa < 10 min después de crearlo · máx. 300 XP/día · una vez por `entregableId` | ✅ iteración 1 |
 | `estudio.PomodoroCompletado` | 10 | Intelecto | 1.º–8.º del día: 100 % · 9.º–12.º: 50 % · 13.º en adelante: 0 | iteración RPG |
 | `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día | ✅ |
-| `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | regla ✅ (falta el evento: iteración 2) |
+| `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | ✅ iteración 2 |
+| `calendario.EventoMarcadoCumplido` | 15 | Disciplina | Solo bloques de compromiso (15 min–8 h), marcables desde que empiezan hasta 48 h después · una vez por `ocurrenciaId` · máx. 45 XP/día | ✅ iteración 2 |
 | `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | "una vez" ✅ · racha en iteración RPG |
 | `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Renombrada,Archivada,Restaurada}`, `Entregable{Editado,Iniciado,Reprogramado,Reabierto,Eliminado}` | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
 
