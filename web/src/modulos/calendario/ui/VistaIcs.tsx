@@ -5,7 +5,9 @@ import { COLORES_CATEGORICOS, type ColorCategorico } from '../../../nucleo/domin
 import { descargarArchivo, leerArchivoComoTexto } from '../../../nucleo/infraestructura/plataforma';
 import { Seccion } from '../../../ui/componentes';
 import { hrefDe } from '../../../ui/enrutador';
-import { AGENDA, EVENTOS } from '../aplicacion/comun';
+import { AGENDA, EVENTOS, zonaDelUsuario } from '../aplicacion/comun';
+import { leerFuentesRegistradas } from '../aplicacion/fuentes';
+import type { ElementoExterno } from '../dominio/visible';
 import { generarIcs, importarEventos, leerParaExportar, prepararImportacion, type AvisoDeImportacion, type Preparacion } from '../aplicacion/importar-exportar';
 import { Campo, idDeControl, LineaDeAviso, type Aviso } from './comun';
 
@@ -22,7 +24,15 @@ export function VistaIcs({ ctx }: PropsDeVista) {
     setOcupado(true);
     try {
       const ahora = ctx.reloj.ahora();
-      const datos = await ctx.almacen.leer([EVENTOS, AGENDA], (tx) => leerParaExportar(tx, incluirExternos));
+      const local = await ctx.almacen.leer([EVENTOS, AGENDA], (tx) => leerParaExportar(tx, incluirExternos));
+      let datos = local;
+      if (incluirExternos) {
+        // Fuentes registradas (p. ej. entregas de Universidad): de hace un año a dentro de dos.
+        const ms = ahora.getTime();
+        const r = await leerFuentesRegistradas(ctx.integraciones, { desdeMs: ms - 365 * 86_400_000, hastaMs: ms + 730 * 86_400_000 }, zonaDelUsuario());
+        const externos = [...local.externos.filter((x) => !r.origenes.has(x.origen)), ...r.elementos.filter((x): x is ElementoExterno => x.fuente === 'externo')];
+        datos = { ...local, externos };
+      }
       descargarArchivo(`ludus-calendario-${ctx.formatos.diaLocal(ahora)}.ics`, await generarIcs(datos, ahora), 'text/calendar');
       setAvisoExportar({ ok: true, texto: t('calendario.ics.exportado', { n: datos.eventos.length + datos.externos.length }) });
     } catch {

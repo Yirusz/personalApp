@@ -2,7 +2,7 @@
  * Configuración de reglas del RPG (ADR-0005). Se valida al arrancar: una
  * configuración inválida detiene la app con un mensaje claro (falla rápido).
  *
- * Estado de implementación: el motor aplica `xp`, `xpPorTalla`, `limiteDiarioXp`,
+ * Estado de implementación: el motor aplica `xp`, `xpPorTalla`, `xpPorValor`, `bonoPorUmbral`, `limiteDiarioXp`,
  * `unaVezPor`, `minMinutosDesdeCreacion`, `minAntelacionHoras` y
  * `multiplicadorPuntual` (iteración 1). `tramosDiarios` y la racha se validan y
  * se implementan en la iteración del RPG (ver docs/plan-maestro.md).
@@ -22,6 +22,10 @@ export interface ReglaDeEvento {
   atributo: string;
   xp?: number;
   xpPorTalla?: Partial<Record<Talla, number>>;
+  /** XP según el valor de un campo de `datos` (p. ej. el tipo de trabajo). Valor desconocido → 0. */
+  xpPorValor?: { campo: string; valores: Record<string, number> };
+  /** × si `datos[campo]` (numérico) es ≥ `minimo` (p. ej. peso ≥ 20 %). */
+  bonoPorUmbral?: { campo: string; minimo: number; multiplicador: number };
   limiteDiarioXp?: number;
   /** × si `datos.aTiempo === true`. */
   multiplicadorPuntual?: number;
@@ -96,7 +100,16 @@ export function validarConfiguracion(datos: unknown): ConfiguracionDeReglas {
     if (typeof r.atributo !== 'string' || !atributos.includes(r.atributo)) p.push(`${donde}.atributo desconocido: ${String(r.atributo)}`);
     const tieneXp = r.xp !== undefined;
     const tieneTalla = r.xpPorTalla !== undefined;
-    if (tieneXp === tieneTalla) p.push(`${donde}: debe tener exactamente uno de xp o xpPorTalla`);
+    const tieneValor = r.xpPorValor !== undefined;
+    if (Number(tieneXp) + Number(tieneTalla) + Number(tieneValor) !== 1) p.push(`${donde}: debe tener exactamente uno de xp, xpPorTalla o xpPorValor`);
+    if (tieneValor) {
+      const v = r.xpPorValor;
+      if (!esObjeto(v) || typeof v.campo !== 'string' || !esObjeto(v.valores) || !Object.values(v.valores).every((x) => esNumero(x))) p.push(`${donde}.xpPorValor inválido`);
+    }
+    if (r.bonoPorUmbral !== undefined) {
+      const b = r.bonoPorUmbral;
+      if (!esObjeto(b) || typeof b.campo !== 'string' || !esNumero(b.minimo) || !esNumero(b.multiplicador, 1)) p.push(`${donde}.bonoPorUmbral inválido`);
+    }
     if (tieneXp && !esNumero(r.xp)) p.push(`${donde}.xp debe ser ≥ 0`);
     if (tieneTalla && (!esObjeto(r.xpPorTalla) || !Object.values(r.xpPorTalla).every((v) => esNumero(v)))) {
       p.push(`${donde}.xpPorTalla inválido`);
@@ -130,6 +143,10 @@ export function indexarReglas(cfg: ConfiguracionDeReglas): ReadonlyMap<string, R
 /** XP antes de límites y multiplicadores. Talla desconocida → 0 (no se adivina). */
 export function xpBase(regla: ReglaDeEvento, datos: Readonly<Record<string, unknown>>): number {
   if (regla.xp !== undefined) return regla.xp;
+  if (regla.xpPorValor) {
+    const valor = datos[regla.xpPorValor.campo];
+    return typeof valor === 'string' && Object.hasOwn(regla.xpPorValor.valores, valor) ? regla.xpPorValor.valores[valor]! : 0;
+  }
   const talla = datos.talla;
   if (talla === 'S' || talla === 'M' || talla === 'L') return regla.xpPorTalla?.[talla] ?? 0;
   return 0;
@@ -191,6 +208,10 @@ export function calcularXp(regla: ReglaDeEvento, datos: Readonly<Record<string, 
 
   let xp = base;
   if (regla.multiplicadorPuntual !== undefined && datos.aTiempo === true) xp *= regla.multiplicadorPuntual;
+  if (regla.bonoPorUmbral) {
+    const v = datos[regla.bonoPorUmbral.campo];
+    if (typeof v === 'number' && v >= regla.bonoPorUmbral.minimo) xp *= regla.bonoPorUmbral.multiplicador;
+  }
   // Redondeo hacia abajo tolerante al error de coma flotante (35 × 1,2 = 41,999…).
   xp = Math.floor(Math.round(xp * 1e6) / 1e6);
 

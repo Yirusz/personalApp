@@ -1,16 +1,17 @@
 import { definirModulo } from '../../nucleo/contrato';
 import { DECLARACIONES } from './aplicacion/comun';
+import { crearProveedores } from './aplicacion/proveedores';
 import { MIGRACIONES } from './infraestructura/migraciones';
 import textos from './textos.es-CO.json';
 
 /**
- * Módulo Universidad (iteración 1): materias y entregables con fecha de entrega.
- * Publica eventos con `datos.agenda` para el Calendario y datos de esfuerzo para
- * el RPG; no conoce a ninguno de los dos.
+ * Módulo Universidad: materias y trabajos con fecha de entrega, estados, nota y
+ * subtareas. Publica eventos para el RPG y ofrece por consulta (ADR-0013) una
+ * fuente de calendario y referencias de materias/trabajos; no conoce a nadie.
  */
 export default definirModulo({
   id: 'universidad',
-  version: '1.0.0',
+  version: '2.0.0',
   nombre: 'universidad.nombre',
   textos,
   navegacion: {
@@ -32,17 +33,18 @@ export default definirModulo({
       vista: () => import('./ui/VistaMaterias').then((m) => m.VistaMaterias),
     },
     {
-      patron: '/universidad/entregables/nuevo',
+      patron: '/universidad/trabajos/nuevo',
       titulo: 'universidad.tituloNuevo',
-      vista: () => import('./ui/VistaNuevoEntregable').then((m) => m.VistaNuevoEntregable),
+      vista: () => import('./ui/VistaNuevoTrabajo').then((m) => m.VistaNuevoTrabajo),
     },
     {
-      patron: '/universidad/entregables/:id',
-      titulo: 'universidad.tituloEntregable',
-      vista: () => import('./ui/VistaEntregable').then((m) => m.VistaEntregable),
+      patron: '/universidad/trabajos/:id',
+      titulo: 'universidad.tituloTrabajo',
+      vista: () => import('./ui/VistaTrabajo').then((m) => m.VistaTrabajo),
     },
   ],
   migraciones: MIGRACIONES,
   eventos: DECLARACIONES,
+  proveedores: crearProveedores,
   tarjetasDeInicio: [{ orden: 10, vista: () => import('./ui/TarjetaUniversidad').then((m) => m.TarjetaUniversidad) }],
 });

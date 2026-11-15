@@ -13,13 +13,12 @@ import ejemplo from './ejemplo/modulo';
 import { leerPerfil, leerUltimosAsientos } from './rpg/aplicacion/registrar-experiencia';
 import { notificadorNulo } from '../nucleo/infraestructura/notificaciones';
 import rpg from './rpg/modulo';
-import { completarEntregable } from './universidad/aplicacion/completar-entregable';
-import { crearMateria } from './universidad/aplicacion/crear-materia';
-import { reabrirEntregable } from './universidad/aplicacion/reabrir-entregable';
-import { registrarEntregable } from './universidad/aplicacion/registrar-entregable';
+import { crearMateria } from './universidad/aplicacion/materias';
+import { agregarSubtarea, calificarTrabajo, entregarTrabajo, reabrirTrabajo, registrarTrabajo } from './universidad/aplicacion/trabajos';
+import { crearIntegraciones, integracionesVacias } from '../nucleo/aplicacion/integraciones';
 import universidad from './universidad/modulo';
 import calendario from './calendario/modulo';
-import { leerFuentes, visiblesEnRango } from './calendario/aplicacion/fuentes';
+import { combinar, leerFuentes, leerFuentesRegistradas, visiblesEnRango } from './calendario/aplicacion/fuentes';
 import { zonaDelUsuario } from './calendario/aplicacion/comun';
 
 const formatos = crearFormatos();
@@ -34,6 +33,7 @@ function contexto(e: Entorno, moduloId: string): ContextoDeModulo {
     formatos,
     diagnostico: e.diagnostico,
     notificaciones: notificadorNulo,
+    integraciones: integracionesVacias,
     navegar: () => undefined,
   };
 }
@@ -93,7 +93,7 @@ describe('contrato de punta a punta: ejemplo → evento → RPG', () => {
   });
 });
 
-describe('Universidad → eventos → RPG (reglas de reglas.v1.json)', () => {
+describe('Universidad → eventos → RPG (XP por tipo, ADR-0014)', () => {
   const HORA = 3_600_000;
 
   async function appUniversidad() {
@@ -103,77 +103,71 @@ describe('Universidad → eventos → RPG (reglas de reglas.v1.json)', () => {
     const ctx = contexto(e, 'universidad');
     const perfil = async () => {
       await e.bus.procesarPendientes();
-      return e.almacen.paraModulo('rpg').leer(['perfil'], leerPerfil);
+      return (await e.almacen.paraModulo('rpg').leer(['perfil'], leerPerfil))!.xpTotal;
     };
-    const materia = await crearMateria(ctx, { nombre: 'Física I', color: 'azul', creditos: null });
-    const registrar = (venceEnHoras: number, talla: 'S' | 'M' | 'L' = 'M') =>
-      registrarEntregable(ctx, {
-        materiaId: materia.id,
-        titulo: 'Taller',
-        tipo: 'tarea',
-        venceEn: new Date(e.reloj.ahora().getTime() + venceEnHoras * HORA).toISOString(),
-        prioridad: 'media',
-        talla,
-      });
+    const materia = await crearMateria(ctx, { nombre: 'Física I', profesor: '', color: 'azul', periodo: '2026-2', creditos: null });
+    const registrar = (venceEnHoras: number, tipo: 'tarea' | 'parcial' | 'proyecto' = 'parcial', peso: number | null = null) =>
+      registrarTrabajo(ctx, { materiaId: materia.id, titulo: 'Trabajo', tipo, descripcion: '', venceEn: new Date(e.reloj.ahora().getTime() + venceEnHoras * HORA).toISOString(), prioridad: 'media', peso });
     return { e, ctx, perfil, registrar };
   }
 
-  it('crear materia (5) + registrar con 72 h (3) + completar M a tiempo (35 × 1,2 = 42) = 50 XP', async () => {
+  it('materia (5) + registrar con 72 h (3) + parcial a tiempo con peso 25 % (50 × 1,2 × 1,25 = 75) + nota (5) = 88 XP', async () => {
     const { e, ctx, perfil, registrar } = await appUniversidad();
-    const t = await registrar(72);
+    const t = await registrar(72, 'parcial', 250);
     e.reloj.avanzar(HORA);
-    await completarEntregable(ctx, t.id);
-    expect(await perfil()).toMatchObject({ xpTotal: 50, atributos: { organizacion: 8, disciplina: 42 } });
+    await entregarTrabajo(ctx, t.id);
+    await calificarTrabajo(ctx, t.id, 42);
+    expect(await perfil()).toBe(88);
   });
 
-  it('reabrir y volver a completar no da doble premio (unaVezPor: entregableId)', async () => {
+  it('reabrir y volver a entregar no da doble premio; corregir la nota tampoco', async () => {
     const { e, ctx, perfil, registrar } = await appUniversidad();
-    const t = await registrar(24); // < 48 h: registrar no da XP
+    const t = await registrar(24, 'tarea'); // < 48 h: registrar no da XP
     e.reloj.avanzar(HORA);
-    await completarEntregable(ctx, t.id);
-    const antes = (await perfil())!.xpTotal;
-    await reabrirEntregable(ctx, t.id);
-    await completarEntregable(ctx, t.id);
-    expect((await perfil())!.xpTotal).toBe(antes);
-    const ultimo = (await e.almacen.paraModulo('rpg').leer(['registro'], (tx) => leerUltimosAsientos(tx, 1)))[0];
-    expect(ultimo).toMatchObject({ tipo: 'universidad.EntregableCompletado', xp: 0, nota: 'ya-otorgado' });
+    await entregarTrabajo(ctx, t.id);
+    await calificarTrabajo(ctx, t.id, 30);
+    const antes = await perfil();
+    await calificarTrabajo(ctx, t.id, 35);
+    await reabrirTrabajo(ctx, t.id);
+    await entregarTrabajo(ctx, t.id);
+    expect(await perfil()).toBe(antes);
   });
 
-  it('completar 5 min después de crearlo no da XP; registrar con menos de 48 h tampoco', async () => {
+  it('entregar 5 min después de crearlo no da XP; las subtareas nunca dan XP', async () => {
     const { e, ctx, perfil, registrar } = await appUniversidad();
-    const t = await registrar(10, 'L');
+    const t = await registrar(10, 'proyecto');
+    for (let i = 0; i < 5; i++) await agregarSubtarea(ctx, t.id, `paso ${i}`);
     e.reloj.avanzar(5 * 60_000);
-    await completarEntregable(ctx, t.id);
-    expect((await perfil())!.xpTotal).toBe(5); // solo la materia
-  });
-
-  it('crear muchas materias no "farmea": la XP por materias tiene tope diario', async () => {
-    const { ctx, perfil } = await appUniversidad();
-    for (const nombre of ['A', 'B', 'C', 'D', 'E']) await crearMateria(ctx, { nombre, color: 'gris', creditos: null });
-    expect((await perfil())!.xpTotal).toBe(20); // 6 materias × 5, tope 20/día
+    await entregarTrabajo(ctx, t.id);
+    expect(await perfil()).toBe(5); // solo la materia
   });
 });
 
-describe('Universidad → datos.agenda → Calendario (sin que se conozcan)', () => {
-  it('las entregas registradas ANTES de instalar el Calendario aparecen (historial), con su color y su estado', async () => {
-    // 1. Solo Universidad: se registra una entrega.
-    const antes = await crearEntorno([universidad]);
-    const u = contexto(antes, 'universidad');
-    const materia = await crearMateria(u, { nombre: 'Física I', color: 'verde', creditos: null });
-    const t = await registrarEntregable(u, { materiaId: materia.id, titulo: 'Taller 3', tipo: 'tarea', venceEn: '2026-11-21T04:59:00Z', prioridad: 'alta', talla: 'M' });
-
-    // 2. Se "instala" el Calendario (nueva versión de la app con el módulo) y su suscripción procesa el historial.
-    const e = await antes.reabrir([universidad, calendario]);
-    for (const s of calendario.suscripciones!(contexto(e, 'calendario'))) e.bus.registrar('calendario', s);
-    await e.bus.iniciar();
-    await e.bus.procesarPendientes();
+describe('Universidad → fuente registrada → Calendario (por consulta, sin conocerse)', () => {
+  it('las entregas aparecen con color y ruta, se marcan hechas al entregar, y la copia vieja por eventos no se duplica', async () => {
+    const e = await crearEntorno([universidad, calendario]);
+    const integraciones = crearIntegraciones([universidad, calendario], (id) => contexto(e, id));
+    const u = contexto(e, 'universidad');
+    const materia = await crearMateria(u, { nombre: 'Física I', profesor: '', color: 'verde', periodo: '2026-2', creditos: null });
+    const t = await registrarTrabajo(u, { materiaId: materia.id, titulo: 'Taller 3', tipo: 'taller', descripcion: '', venceEn: '2026-11-21T04:59:00Z', prioridad: 'alta', peso: null });
+    // Copia "vieja" en la proyección (como la publicaba la iteración 1 con datos.agenda).
+    await e.almacen.paraModulo('calendario').escribir(['agenda'], (tx) => tx.poner('agenda', { clave: `universidad:${t.id}`, origen: 'universidad', agenda: { id: t.id, titulo: 'Taller 3', inicio: t.venceEn, tipo: 'vencimiento', estado: 'pendiente' }, actualizadoEn: t.creadoEn }));
     const rango = { desdeMs: Date.parse('2026-11-16T05:00:00Z'), hastaMs: Date.parse('2026-11-23T05:00:00Z') };
-    const ver = async () => visiblesEnRango(await leerFuentes(e.almacen.paraModulo('calendario')), rango, zonaDelUsuario()).elementos;
-    expect(await ver()).toMatchObject([{ fuente: 'externo', origen: 'universidad', titulo: 'Taller 3', color: 'verde', fechaInicio: '2026-11-20', hecho: false }]);
+    const zona = zonaDelUsuario();
+    const ver = async () => {
+      const r = await leerFuentesRegistradas(integraciones, rango, zona);
+      return combinar(visiblesEnRango(await leerFuentes(e.almacen.paraModulo('calendario')), rango, zona, r.origenes), r).elementos;
+    };
+    expect(await ver()).toMatchObject([{ fuente: 'externo', origen: 'universidad', titulo: 'Taller 3', color: 'verde', fechaInicio: '2026-11-20', hecho: false, ruta: `/universidad/trabajos/${t.id}` }]);
+    await entregarTrabajo(u, t.id);
+    expect(await ver()).toMatchObject([{ hecho: true }]);
+  });
 
-    // 3. Completar en Universidad lo marca como hecho en el Calendario.
-    await completarEntregable(contexto(e, 'universidad'), t.id);
-    await e.bus.procesarPendientes();
-    expect((await ver())[0]).toMatchObject({ hecho: true });
+  it('Estudio/Notas pueden buscar materias y trabajos sin importar Universidad', async () => {
+    const e = await crearEntorno([universidad, calendario]);
+    const integraciones = crearIntegraciones([universidad, calendario], (id) => contexto(e, id));
+    await crearMateria(contexto(e, 'universidad'), { nombre: 'Cálculo II', profesor: '', color: 'azul', periodo: '2026-2', creditos: null });
+    expect(integraciones.tiposDeReferencia()).toEqual(['universidad.materia', 'universidad.trabajo']);
+    expect((await integraciones.buscarReferencias({ tipo: 'universidad.materia', texto: 'calc' })).referencias.map((r) => r.titulo)).toEqual(['Cálculo II']);
   });
 });

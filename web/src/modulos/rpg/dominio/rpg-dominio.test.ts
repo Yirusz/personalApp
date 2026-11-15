@@ -42,7 +42,7 @@ describe('reglas v1', () => {
     } catch (e) {
       expect((e as Error).message).toMatch(/evento inválido/);
       expect((e as Error).message).toMatch(/atributo desconocido: fuerza/);
-      expect((e as Error).message).toMatch(/exactamente uno de xp o xpPorTalla/);
+      expect((e as Error).message).toMatch(/exactamente uno de xp, xpPorTalla o xpPorValor/);
     }
   });
 
@@ -112,5 +112,24 @@ describe('condiciones de las reglas (unaVezPor, antelación, rapidez, puntualida
   it('valida el tipo de unaVezPor', () => {
     const malo = { ...reglasV1, reglas: [{ evento: 'a.B', atributo: 'intelecto', xp: 1, unaVezPor: 3 }] };
     expect(() => validarConfiguracion(malo)).toThrow(/unaVezPor/);
+  });
+});
+
+describe('XP por tipo de trabajo (ADR-0014)', () => {
+  const cfg = validarConfiguracion(reglasV1);
+  const entregado = cfg.reglas.find((r) => r.evento === 'universidad.TrabajoEntregado')!;
+  const sinHistoria = { acumuladoHoy: 0, yaOtorgado: false };
+
+  it('un parcial a tiempo con peso 25 % da 50 × 1,2 × 1,25 = 75; un tipo desconocido, 0', () => {
+    expect(calcularXp(entregado, { tipo: 'parcial', aTiempo: true, peso: 250, minutosDesdeCreacion: 600 }, sinHistoria)).toEqual({ xpBase: 50, xp: 75 });
+    expect(calcularXp(entregado, { tipo: 'tarea', aTiempo: false, peso: null, minutosDesdeCreacion: 600 }, sinHistoria)).toEqual({ xpBase: 10, xp: 10 });
+    expect(calcularXp(entregado, { tipo: 'examen', minutosDesdeCreacion: 600 }, sinHistoria).xp).toBe(0);
+  });
+
+  it('valida xpPorValor y bonoPorUmbral', () => {
+    const malo = { ...reglasV1, reglas: [{ evento: 'a.B', atributo: 'intelecto', xp: 1, xpPorValor: { campo: 'x', valores: {} } }] };
+    expect(() => validarConfiguracion(malo)).toThrow(/exactamente uno/);
+    const bono = { ...reglasV1, reglas: [{ evento: 'a.B', atributo: 'intelecto', xp: 1, bonoPorUmbral: { campo: 'p', minimo: 1, multiplicador: 0.5 } }] };
+    expect(() => validarConfiguracion(bono)).toThrow(/bonoPorUmbral/);
   });
 });
