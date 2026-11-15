@@ -5,12 +5,14 @@ import { esActivo, type EstadoDeTrabajo, type Trabajo } from './trabajo';
 export const INDICADORES = ['vencido', 'hoy', 'semana', 'despues'] as const;
 export type Indicador = (typeof INDICADORES)[number] | 'cerrado';
 
-/** Lunes de la semana (lunes a domingo) de una fecha civil. */
-function lunes(fecha: string): string {
-  const ms = Date.parse(`${fecha}T00:00:00Z`);
-  const dia = new Date(ms).getUTCDay() || 7;
-  return new Date(ms - (dia - 1) * 86_400_000).toISOString().slice(0, 10);
-}
+/** Días entre dos fechas civiles AAAA-MM-DD (sin zona: aritmética sobre el calendario). */
+const diasEntre = (desde: string, hasta: string) => Math.round((Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000);
+
+/**
+ * "Esta semana" es una ventana móvil: los 6 días civiles siguientes a hoy. Con la semana
+ * calendario (lunes–domingo) el grupo quedaría vacío cada domingo, justo cuando se planea.
+ */
+export const DIAS_DE_SEMANA = 6;
 
 /** Urgencia de un trabajo en la zona del usuario. Los no activos (entregado, calificado, cancelado) son "cerrado". */
 export function indicador(t: Trabajo, ahora: Date, zona: Zona): Indicador {
@@ -20,7 +22,7 @@ export function indicador(t: Trabajo, ahora: Date, zona: Zona): Indicador {
   const hoy = zona.aCivil(ahora.getTime()).fecha;
   const dia = zona.aCivil(vence).fecha;
   if (dia === hoy) return 'hoy';
-  if (lunes(dia) === lunes(hoy)) return 'semana';
+  if (diasEntre(hoy, dia) <= DIAS_DE_SEMANA) return 'semana';
   return 'despues';
 }
 

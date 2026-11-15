@@ -208,12 +208,17 @@ describe('5 · Subtareas (dentro del agregado)', () => {
 describe('4 · Próximas entregas: indicadores vencido / hoy / esta semana', () => {
   const t = (id: string, venceEn: string) => trabajo({ id, venceEn } as Partial<DatosDeTrabajo> & { id: string });
 
-  it('clasifica por día y semana locales (lunes a domingo, Bogotá)', () => {
+  it('clasifica por día local (Bogotá); "esta semana" = los 6 días siguientes a hoy', () => {
     const ahora = new Date('2026-11-17T15:00:00Z'); // martes 17, 10:00
     expect(indicador(t('a', '2026-11-17T14:00:00Z'), ahora, BOGOTA)).toBe('vencido');
     expect(indicador(t('b', '2026-11-18T04:30:00Z'), ahora, BOGOTA)).toBe('hoy'); // martes 23:30 local
-    expect(indicador(t('c', '2026-11-23T04:59:00Z'), ahora, BOGOTA)).toBe('semana'); // domingo 22, 23:59
-    expect(indicador(t('d', '2026-11-23T05:00:00Z'), ahora, BOGOTA)).toBe('despues'); // lunes 23, 00:00
+    expect(indicador(t('c', '2026-11-24T04:59:00Z'), ahora, BOGOTA)).toBe('semana'); // lunes 23, 23:59
+    expect(indicador(t('d', '2026-11-24T05:00:00Z'), ahora, BOGOTA)).toBe('despues'); // martes 24, 00:00
+    // Un domingo, lo del martes sigue siendo "esta semana" (con semana calendario quedaría vacío).
+    const domingo = new Date('2026-11-15T20:00:00Z');
+    expect(indicador(t('e', '2026-11-17T19:50:00Z'), domingo, BOGOTA)).toBe('semana');
+    // Cruce de mes y de año.
+    expect(indicador(t('f', '2027-01-03T15:00:00Z'), new Date('2026-12-30T15:00:00Z'), BOGOTA)).toBe('semana');
     expect(indicador(entregar(t('e', '2026-11-17T14:00:00Z'), ahora).trabajo, ahora, BOGOTA)).toBe('cerrado');
   });
 

@@ -1,49 +1,45 @@
-/** U5: próximos vencimientos arriba y lista filtrable por materia y estado. */
+/** Historia 4: "Próximas entregas" (vencido / hoy / esta semana / más adelante) y lista filtrable por materia y estado. */
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { PropsDeVista } from '../../../nucleo/contrato';
 import { Cargando, ErrorConReintento, Seccion, Vacio } from '../../../ui/componentes';
 import { useOcultoPorDeshacer } from '../../../ui/deshacer';
 import { hrefDe } from '../../../ui/enrutador';
 import { useConsulta } from '../../../ui/servicios';
-import { ENTREGABLES, MATERIAS } from '../aplicacion/comun';
-import { leerPanel } from '../aplicacion/consultas';
-import { FILTRO_INICIAL, FILTROS_DE_ESTADO, HORAS_PROXIMOS, filtrarEntregables, proximosVencimientos, type FiltroDeEntregables, type FiltroDeEstado } from '../dominio/consultas';
+import { zonaDelUsuario } from '../aplicacion/comun';
+import { ALMACENES_DEL_PANEL, leerPanel } from '../aplicacion/consultas';
+import { agruparProximas, FILTRO_INICIAL, FILTROS_DE_ESTADO, filtrarTrabajos, type FiltroDeEstado, type FiltroDeTrabajos } from '../dominio/consultas';
 import { guardarFiltro, leerFiltro } from '../infraestructura/preferencias';
-import { Campo, idDeControl, ItemEntregable, LineaDeAviso, type Aviso } from './comun';
+import { Campo, idDeControl, ItemTrabajo, LineaDeAviso, type Aviso } from './comun';
 
 export function VistaUniversidad({ ctx }: PropsDeVista) {
   const { t } = ctx;
-  const consulta = useConsulta(ctx.almacen, [MATERIAS, ENTREGABLES], leerPanel);
+  const consulta = useConsulta(ctx.almacen, ALMACENES_DEL_PANEL, leerPanel);
   const oculto = useOcultoPorDeshacer();
-  const [filtro, setFiltro] = useState<FiltroDeEntregables>(leerFiltro);
+  const [filtro, setFiltro] = useState<FiltroDeTrabajos>(leerFiltro);
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  useEffect(() => guardarFiltro(filtro), [filtro]);
 
   const panel = consulta.estado === 'listo' ? consulta.datos : null;
-  const datos = useMemo(() => {
+  const d = useMemo(() => {
     if (!panel) return null;
     const activas = panel.materias.filter((m) => !m.archivada);
-    const idsActivas = new Set(activas.map((m) => m.id));
+    const ids = new Set(activas.map((m) => m.id));
     const porId = new Map(panel.materias.map((m) => [m.id, m]));
-    const visibles = panel.entregables.filter((e) => e.id !== oculto && idsActivas.has(e.materiaId));
     // Un filtro guardado de una materia que ya no está activa se ignora.
-    const efectivo = filtro.materiaId && !idsActivas.has(filtro.materiaId) ? { ...filtro, materiaId: null } : filtro;
-    return {
-      activas,
-      porId,
+    const efectivo = filtro.materiaId && !ids.has(filtro.materiaId) ? { ...filtro, materiaId: null } : filtro;
+    const visibles = filtrarTrabajos(
+      panel.trabajos.filter((x) => x.id !== oculto),
       efectivo,
-      hayEntregables: visibles.length > 0,
-      proximos: proximosVencimientos(visibles, ctx.reloj.ahora()),
-      lista: filtrarEntregables(visibles, efectivo, idsActivas),
-    };
+      ids,
+    );
+    return { activas, porId, efectivo, hayTrabajos: panel.trabajos.some((x) => ids.has(x.materiaId)), visibles, grupos: efectivo.estado === 'activos' ? agruparProximas(visibles, ctx.reloj.ahora(), zonaDelUsuario()) : null };
   }, [panel, filtro, oculto]);
-
-  useEffect(() => guardarFiltro(filtro), [filtro]);
 
   if (consulta.estado === 'cargando') return <Cargando />;
   if (consulta.estado === 'error') return <ErrorConReintento error={consulta.error} reintentar={consulta.reintentar} />;
-  const d = datos!;
+  const x = d!;
 
-  if (d.activas.length === 0) {
+  if (x.activas.length === 0) {
     return (
       <div class="pila">
         <Vacio>{t('universidad.sinMaterias')}</Vacio>
@@ -54,90 +50,80 @@ export function VistaUniversidad({ ctx }: PropsDeVista) {
     );
   }
 
-  const filtrado = d.efectivo.materiaId !== null || d.efectivo.estado !== FILTRO_INICIAL.estado;
+  const filtrado = x.efectivo.materiaId !== null || x.efectivo.estado !== FILTRO_INICIAL.estado;
+  const item = (tr: (typeof x.visibles)[number]) => <ItemTrabajo key={tr.id} ctx={ctx} trabajo={tr} materia={x.porId.get(tr.materiaId)} alCambiar={setAviso} />;
 
   return (
     <div class="pila">
       <div class="acciones">
-        <a class="boton boton--primario" href={hrefDe('/universidad/entregables/nuevo')}>
-          + {t('universidad.registrarEntregable')}
+        <a class="boton boton--primario" href={hrefDe('/universidad/trabajos/nuevo')}>
+          + {t('universidad.registrarTrabajo')}
         </a>
         <a class="boton" href={hrefDe('/universidad/materias')}>
           {t('universidad.verMaterias')}
         </a>
       </div>
 
+      <div class="filtros">
+        <Campo campo="filtro-materia" etiqueta={t('universidad.filtroMateria')}>
+          <select id={idDeControl('filtro-materia')} value={x.efectivo.materiaId ?? ''} onChange={(e) => setFiltro({ ...filtro, materiaId: (e.currentTarget as HTMLSelectElement).value || null })}>
+            <option value="">{t('universidad.filtroTodas')}</option>
+            {x.activas.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nombre} ({m.periodo})
+              </option>
+            ))}
+          </select>
+        </Campo>
+        <Campo campo="filtro-estado" etiqueta={t('universidad.filtroEstado')}>
+          <select id={idDeControl('filtro-estado')} value={x.efectivo.estado} onChange={(e) => setFiltro({ ...filtro, estado: (e.currentTarget as HTMLSelectElement).value as FiltroDeEstado })}>
+            {FILTROS_DE_ESTADO.map((s) => (
+              <option key={s} value={s}>
+                {t(`universidad.filtro.${s}`)}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      </div>
+
       <LineaDeAviso aviso={aviso} />
 
-      {d.proximos.length > 0 && (
-        <Seccion titulo={t('universidad.proximos')}>
-          <p class="texto-tenue">{t('universidad.proximosAyuda', { horas: HORAS_PROXIMOS })}</p>
-          <ul class="lista">
-            {d.proximos.map((e) => (
-              <ItemEntregable key={e.id} ctx={ctx} entregable={e} materia={d.porId.get(e.materiaId)} alCompletar={setAviso} />
-            ))}
-          </ul>
+      {x.grupos ? (
+        <Seccion titulo={t('universidad.proximas')}>
+          {x.grupos.length === 0 ? (
+            <div class="pila">
+              <Vacio>{filtrado ? t('universidad.listaVaciaFiltro') : t('universidad.proximasVacio')}</Vacio>
+              {!x.hayTrabajos && (
+                <a class="boton boton--primario" href={hrefDe('/universidad/trabajos/nuevo')}>
+                  {t('universidad.registrarTrabajo')}
+                </a>
+              )}
+            </div>
+          ) : (
+            x.grupos.map((g) => (
+              <section key={g.indicador} class="pila" aria-labelledby={`universidad-grupo-${g.indicador}`}>
+                <h3 id={`universidad-grupo-${g.indicador}`} class={g.indicador === 'vencido' ? 'universidad-grupo universidad-grupo--vencido' : 'universidad-grupo'}>
+                  {t(`universidad.indicador.${g.indicador}`)} ({g.trabajos.length})
+                </h3>
+                <ul class="lista">{g.trabajos.map(item)}</ul>
+              </section>
+            ))
+          )}
+        </Seccion>
+      ) : (
+        <Seccion titulo={t('universidad.lista')}>
+          {x.visibles.length === 0 ? (
+            <div class="pila">
+              <Vacio>{t('universidad.listaVaciaFiltro')}</Vacio>
+              <button type="button" class="boton" onClick={() => setFiltro(FILTRO_INICIAL)}>
+                {t('universidad.quitarFiltro')}
+              </button>
+            </div>
+          ) : (
+            <ul class="lista">{x.visibles.map(item)}</ul>
+          )}
         </Seccion>
       )}
-
-      <Seccion titulo={t('universidad.lista')}>
-        {!d.hayEntregables ? (
-          <div class="pila">
-            <Vacio>{t('universidad.listaVacia')}</Vacio>
-            <a class="boton boton--primario" href={hrefDe('/universidad/entregables/nuevo')}>
-              {t('universidad.registrarEntregable')}
-            </a>
-          </div>
-        ) : (
-          <>
-            <div class="filtros">
-              <Campo campo="filtro-materia" etiqueta={t('universidad.filtroMateria')}>
-                <select
-                  id={idDeControl('filtro-materia')}
-                  value={d.efectivo.materiaId ?? ''}
-                  onChange={(e) => setFiltro({ ...filtro, materiaId: (e.currentTarget as HTMLSelectElement).value || null })}
-                >
-                  <option value="">{t('universidad.filtroTodas')}</option>
-                  {d.activas.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
-              <Campo campo="filtro-estado" etiqueta={t('universidad.filtroEstado')}>
-                <select
-                  id={idDeControl('filtro-estado')}
-                  value={d.efectivo.estado}
-                  onChange={(e) => setFiltro({ ...filtro, estado: (e.currentTarget as HTMLSelectElement).value as FiltroDeEstado })}
-                >
-                  {FILTROS_DE_ESTADO.map((estado) => (
-                    <option key={estado} value={estado}>
-                      {t(`universidad.filtro.${estado}`)}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
-            </div>
-            {d.lista.length === 0 ? (
-              <div class="pila">
-                <Vacio>{t('universidad.listaVaciaFiltro')}</Vacio>
-                {filtrado && (
-                  <button type="button" class="boton" onClick={() => setFiltro(FILTRO_INICIAL)}>
-                    {t('universidad.quitarFiltro')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <ul class="lista">
-                {d.lista.map((e) => (
-                  <ItemEntregable key={e.id} ctx={ctx} entregable={e} materia={d.porId.get(e.materiaId)} alCompletar={setAviso} />
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </Seccion>
     </div>
   );
 }

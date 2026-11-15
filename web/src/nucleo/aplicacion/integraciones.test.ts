@@ -17,6 +17,7 @@ const modulo = (id: string, tipos: string[], falla = false) =>
     textos: { [`${id}.nombre`]: id },
     rutas: [],
     migraciones: [],
+    eventos: {},
     proveedores: () => ({
       fuentesDeCalendario: [fuente(`${id}.vencimientos`)],
       referencias: {
