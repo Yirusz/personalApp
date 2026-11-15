@@ -4,10 +4,15 @@ import { useState } from 'preact/hooks';
 import type { ContextoDeModulo } from '../../../nucleo/contrato';
 import type { Traductor } from '../../../nucleo/i18n/traductor';
 import { hrefDe } from '../../../ui/enrutador';
-import { completarEntregable } from '../aplicacion/completar-entregable';
-import { estaVencido, PRIORIDADES, TALLAS, TIPOS, titulo as tituloValido, TITULO_MAX, type Entregable, type Prioridad, type Talla, type TipoDeEntregable } from '../dominio/entregable';
+import { zonaDelUsuario } from '../aplicacion/comun';
+import { entregarTrabajo } from '../aplicacion/trabajos';
+import { indicador } from '../dominio/consultas';
 import { ErrorDeUniversidad, type CampoDeFormulario } from '../dominio/errores';
 import type { Materia } from '../dominio/materia';
+import { pesoDesdeTexto, textoDeNota, textoDePeso } from '../dominio/nota';
+import { aTiempo, DESCRIPCION_MAX, esActivo, PRIORIDADES, progreso, TIPOS, TITULO_MAX, titulo as tituloValido, type Prioridad, type TipoDeTrabajo, type Trabajo } from '../dominio/trabajo';
+
+// ---- Errores y campos ----
 
 export function mensajeDeError(t: Traductor, error: unknown): string {
   return error instanceof ErrorDeUniversidad ? t(error.clave, error.parametros) : t('universidad.error.inesperado');
@@ -15,43 +20,23 @@ export function mensajeDeError(t: Traductor, error: unknown): string {
 
 export type ErroresDeCampo = Partial<Record<CampoDeFormulario, string>>;
 
-/** Traduce un error a mensaje por campo (si lo tiene) o general. */
 export function repartirError(t: Traductor, error: unknown): { campos: ErroresDeCampo; general: string | null } {
   if (error instanceof ErrorDeUniversidad && error.campo) return { campos: { [error.campo]: mensajeDeError(t, error) }, general: null };
   return { campos: {}, general: mensajeDeError(t, error) };
 }
 
-/** Lleva el foco al primer campo con error (teclado y lectores de pantalla). */
 export function enfocarPrimerError(formulario: HTMLFormElement | null): void {
   queueMicrotask(() => formulario?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
 }
 
-export interface Aviso {
-  ok: boolean;
-  texto: string;
-}
+export const idDeControl = (campo: string) => `universidad-${campo}`;
+const idDeAyuda = (campo: string) => `universidad-${campo}-ayuda`;
+const idDeError = (campo: string) => `universidad-${campo}-error`;
 
-export function LineaDeAviso({ aviso }: { aviso: Aviso | null }) {
-  // El contenedor existe siempre para que los lectores de pantalla anuncien los cambios.
-  return (
-    <div role="status" aria-live="polite">
-      {aviso && <p class={aviso.ok ? 'aviso' : 'aviso aviso--alerta'}>{aviso.texto}</p>}
-    </div>
-  );
-}
-
-export function idDeAyuda(campo: string): string {
-  return `universidad-${campo}-ayuda`;
-}
-
-export function idDeError(campo: string): string {
-  return `universidad-${campo}-error`;
-}
-
-/** Atributos de accesibilidad de un control con ayuda y error opcionales. */
+/** id, aria-invalid y aria-describedby de un control. */
 export function aria(campo: string, error: string | undefined, conAyuda = false) {
   const describe = [conAyuda ? idDeAyuda(campo) : '', error ? idDeError(campo) : ''].filter(Boolean).join(' ');
-  return { 'aria-invalid': error ? ('true' as const) : undefined, 'aria-describedby': describe || undefined };
+  return { id: idDeControl(campo), 'aria-invalid': error ? ('true' as const) : undefined, 'aria-describedby': describe || undefined };
 }
 
 export function ErrorDeCampo({ campo, error }: { campo: string; error: string | undefined }) {
@@ -62,117 +47,102 @@ export function ErrorDeCampo({ campo, error }: { campo: string; error: string | 
   ) : null;
 }
 
-export function idDeControl(campo: string): string {
-  return `universidad-${campo}`;
-}
-
-/**
- * Campo con etiqueta, ayuda y error separados: el nombre accesible es solo la
- * etiqueta; la ayuda y el error se asocian con aria-describedby (ver `aria`).
- * El control hijo debe llevar `id={idDeControl(campo)}`.
- */
-export function Campo({
-  campo,
-  etiqueta,
-  ayuda,
-  error,
-  children,
-  despues,
-  clase = 'campo',
-}: {
-  campo: string;
-  etiqueta: string;
-  ayuda?: ComponentChildren;
-  error?: string;
-  children: ComponentChildren;
-  /** Contenido extra bajo la ayuda (p. ej. una advertencia). */
-  despues?: ComponentChildren;
-  clase?: string;
-}) {
+/** Etiqueta, control, ayuda y error separados: el nombre accesible es solo la etiqueta. */
+export function Campo(props: { campo: string; etiqueta: string; ayuda?: ComponentChildren; error?: string; despues?: ComponentChildren; children: ComponentChildren; clase?: string }) {
   return (
-    <div class={clase}>
-      <label for={idDeControl(campo)}>{etiqueta}</label>
-      {children}
-      {ayuda && (
-        <span id={idDeAyuda(campo)} class="campo__ayuda">
-          {ayuda}
+    <div class={props.clase ?? 'campo'}>
+      <label for={idDeControl(props.campo)}>{props.etiqueta}</label>
+      {props.children}
+      {props.ayuda && (
+        <span id={idDeAyuda(props.campo)} class="campo__ayuda">
+          {props.ayuda}
         </span>
       )}
-      {despues}
-      <ErrorDeCampo campo={campo} error={error} />
+      {props.despues}
+      <ErrorDeCampo campo={props.campo} error={props.error} />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Entregable en una lista
-// ---------------------------------------------------------------------------
+export interface Aviso {
+  ok: boolean;
+  texto: string;
+}
 
-export function ItemEntregable({
-  ctx,
-  entregable: e,
-  materia,
-  alCompletar,
-}: {
-  ctx: ContextoDeModulo;
-  entregable: Entregable;
-  materia: Materia | undefined;
-  alCompletar: (aviso: Aviso) => void;
-}) {
-  const { t, formatos } = ctx;
+export function LineaDeAviso({ aviso }: { aviso: Aviso | null }) {
+  return (
+    <div role="status" aria-live="polite">
+      {aviso && <p class={aviso.ok ? 'aviso' : 'aviso aviso--alerta'}>{aviso.texto}</p>}
+    </div>
+  );
+}
+
+// ---- Un trabajo en una lista ----
+
+const CLASE_INDICADOR = { vencido: 'etiqueta etiqueta--peligro', hoy: 'etiqueta etiqueta--alerta', semana: 'etiqueta' } as const;
+
+export function IndicadorDeUrgencia({ ctx, trabajo }: { ctx: ContextoDeModulo; trabajo: Trabajo }) {
+  const i = indicador(trabajo, ctx.reloj.ahora(), zonaDelUsuario());
+  if (i === 'cerrado' || i === 'despues') return null;
+  return <span class={CLASE_INDICADOR[i]}>{ctx.t(`universidad.indicador.${i}`)}</span>;
+}
+
+export function detalleDeTrabajo(ctx: ContextoDeModulo, t: Trabajo, materia: Materia | undefined): string {
+  return [
+    materia?.nombre,
+    ctx.t(`universidad.tipo.${t.tipo}`),
+    ctx.t('universidad.prioridadDe', { prioridad: ctx.t(`universidad.prioridad.${t.prioridad}`).toLowerCase() }),
+    t.peso !== null ? ctx.t('universidad.pesoDe', { peso: textoDePeso(t.peso) }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+export function ItemTrabajo({ ctx, trabajo: t, materia, alCambiar }: { ctx: ContextoDeModulo; trabajo: Trabajo; materia: Materia | undefined; alCambiar: (aviso: Aviso) => void }) {
+  const { t: tr, formatos } = ctx;
   const [ocupado, setOcupado] = useState(false);
   const ahora = ctx.reloj.ahora();
-  const completado = e.estado === 'completado';
-
-  const completar = async () => {
+  const p = progreso(t);
+  const entregar = async () => {
     setOcupado(true);
     try {
-      await completarEntregable(ctx, e.id);
-      alCompletar({ ok: true, texto: t('universidad.completadoOk') });
+      await entregarTrabajo(ctx, t.id);
+      alCambiar({ ok: true, texto: tr('universidad.entregadoOk') });
     } catch (error) {
-      alCompletar({ ok: false, texto: mensajeDeError(t, error) });
+      alCambiar({ ok: false, texto: mensajeDeError(tr, error) });
     } finally {
       setOcupado(false);
     }
   };
-
   return (
     <li class="lista__item" data-color={materia?.color}>
       <div class="fila">
         <div class="fila__principal">
           <span class="fila__titulo">
             <span class="marca-color" aria-hidden="true" />
-            <a href={hrefDe(`/universidad/entregables/${e.id}`)} class={completado ? 'tachado' : undefined}>
-              {e.titulo}
+            <a href={hrefDe(`/universidad/trabajos/${t.id}`)} class={t.estado === 'cancelado' ? 'tachado' : undefined}>
+              {t.titulo}
             </a>
           </span>
+          <span class="texto-tenue">{detalleDeTrabajo(ctx, t, materia)}</span>
           <span class="texto-tenue">
-            {[materia?.nombre, t(`universidad.tipo.${e.tipo}`), t('universidad.prioridadDe', { prioridad: t(`universidad.prioridad.${e.prioridad}`).toLowerCase() }), t('universidad.tallaDe', { talla: e.talla })]
-              .filter(Boolean)
-              .join(' · ')}
-          </span>
-          <span class="texto-tenue">
-            {completado && e.completadoEn ? (
-              <time dateTime={e.completadoEn}>{t('universidad.completadoEl', { fecha: formatos.fechaHora(e.completadoEn) })}</time>
+            {t.entregadoEn ? (
+              <time dateTime={t.entregadoEn}>
+                {tr('universidad.entregadoEl', { fecha: formatos.fechaHora(t.entregadoEn) })} · {aTiempo(t) ? tr('universidad.aTiempo') : tr('universidad.tarde')}
+              </time>
             ) : (
-              <time dateTime={e.venceEn}>{t('universidad.vence', { fecha: formatos.fechaHora(e.venceEn), relativo: formatos.relativo(e.venceEn, ahora) })}</time>
+              <time dateTime={t.venceEn}>{tr('universidad.vence', { fecha: formatos.fechaHora(t.venceEn), relativo: formatos.relativo(t.venceEn, ahora) })}</time>
             )}
+            {p.total > 0 && ` · ${tr('universidad.subtareasDe', p)}`}
           </span>
         </div>
         <span class="acciones">
-          {estaVencido(e, ahora) && <span class="etiqueta etiqueta--alerta">{t('universidad.vencido')}</span>}
-          {e.estado === 'enCurso' && <span class="etiqueta">{t('universidad.estado.enCurso')}</span>}
-          {completado ? (
-            <span class="etiqueta">{t('universidad.estado.completado')}</span>
-          ) : (
-            <button
-              type="button"
-              class="boton"
-              disabled={ocupado}
-              onClick={completar}
-              aria-label={t('universidad.completarTitulo', { titulo: e.titulo })}
-            >
-              ✓ {t('universidad.completar')}
+          <IndicadorDeUrgencia ctx={ctx} trabajo={t} />
+          {t.estado !== 'pendiente' && <span class="etiqueta">{tr(`universidad.estado.${t.estado}`)}</span>}
+          {t.nota !== undefined && <span class="etiqueta">{tr('universidad.notaDe', { nota: textoDeNota(t.nota) })}</span>}
+          {esActivo(t.estado) && (
+            <button type="button" class="boton" disabled={ocupado} onClick={entregar} aria-label={tr('universidad.entregarTitulo', { titulo: t.titulo })}>
+              ✓ {tr('universidad.entregar')}
             </button>
           )}
         </span>
@@ -181,190 +151,123 @@ export function ItemEntregable({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Campos del formulario de entregable (registrar y editar)
-// ---------------------------------------------------------------------------
+// ---- Formulario de trabajo (registrar y editar) ----
 
-export interface BorradorDeEntregable {
+export interface BorradorDeTrabajo {
   materiaId: string;
   titulo: string;
-  tipo: TipoDeEntregable;
-  /** Valor de <input type="datetime-local"> en hora de Bogotá. */
+  tipo: TipoDeTrabajo;
+  descripcion: string;
   venceEnLocal: string;
   prioridad: Prioridad;
-  talla: Talla;
+  /** Tal como lo escribe el usuario ("12,5"). */
+  peso: string;
 }
 
-/**
- * Revisa el borrador completo antes de llamar al caso de uso, para señalar
- * TODOS los campos con problemas a la vez (el dominio vuelve a validar).
- */
-export function validarBorrador(
-  ctx: ContextoDeModulo,
-  b: BorradorDeEntregable,
-  opciones: { conMateria: boolean; fechaBloqueada?: boolean },
-): { errores: ErroresDeCampo; venceEn: string | null } {
+export const BORRADOR_VACIO: BorradorDeTrabajo = { materiaId: '', titulo: '', tipo: 'tarea', descripcion: '', venceEnLocal: '', prioridad: 'media', peso: '' };
+
+/** Revisa todo el borrador para señalar a la vez todos los campos con problemas (el dominio vuelve a validar). */
+export function revisarBorrador(ctx: ContextoDeModulo, b: BorradorDeTrabajo, opciones: { conMateria: boolean; fechaBloqueada?: boolean }) {
   const errores: ErroresDeCampo = {};
   if (opciones.conMateria && !b.materiaId) errores.materia = ctx.t('universidad.error.materiaNoEncontrada');
   try {
     tituloValido(b.titulo);
-  } catch (error) {
-    errores.titulo = mensajeDeError(ctx.t, error);
+  } catch (e) {
+    errores.titulo = mensajeDeError(ctx.t, e);
   }
   const venceEn = ctx.formatos.desdeEntradaLocal(b.venceEnLocal);
   if (!opciones.fechaBloqueada && !venceEn) errores.venceEn = ctx.t('universidad.error.fecha');
-  return { errores, venceEn };
+  let peso: number | null = null;
+  try {
+    peso = pesoDesdeTexto(b.peso);
+  } catch (e) {
+    errores.peso = mensajeDeError(ctx.t, e);
+  }
+  return { errores, venceEn, peso, valido: Object.keys(errores).length === 0 };
 }
 
-export const BORRADOR_VACIO: BorradorDeEntregable = { materiaId: '', titulo: '', tipo: 'tarea', venceEnLocal: '', prioridad: 'media', talla: 'M' };
-
-function GrupoDeOpciones<T extends string>({
-  nombre,
-  leyenda,
-  opciones,
-  valor,
-  etiqueta,
-  alCambiar,
-  desactivado = false,
-  ayuda,
-  error,
-}: {
-  nombre: string;
-  leyenda: string;
-  opciones: readonly T[];
-  valor: T;
-  etiqueta: (o: T) => string;
-  alCambiar: (v: T) => void;
-  desactivado?: boolean;
-  ayuda?: ComponentChildren;
-  error?: string;
-}) {
-  return (
-    <fieldset class="grupo grupo--en-linea" {...aria(nombre, error, Boolean(ayuda))}>
-      <legend>{leyenda}</legend>
-      {opciones.map((o) => (
-        <label key={o} class={desactivado ? 'opcion opcion--desactivada' : 'opcion'}>
-          <input type="radio" name={`universidad-${nombre}`} value={o} checked={valor === o} disabled={desactivado} onChange={() => alCambiar(o)} />
-          {etiqueta(o)}
-        </label>
-      ))}
-      {ayuda && (
-        <span id={idDeAyuda(nombre)} class="campo__ayuda">
-          {ayuda}
-        </span>
-      )}
-      <ErrorDeCampo campo={nombre} error={error} />
-    </fieldset>
-  );
+/** Quita el error de los campos que el usuario acaba de cambiar. */
+export function limpiarErrores(e: ErroresDeCampo, cambios: Partial<BorradorDeTrabajo>): ErroresDeCampo {
+  const copia = { ...e };
+  const mapa: Record<string, CampoDeFormulario> = { materiaId: 'materia', venceEnLocal: 'venceEn' };
+  for (const k of Object.keys(cambios)) delete copia[mapa[k] ?? (k as CampoDeFormulario)];
+  return copia;
 }
 
-export function CamposDeEntregable({
+export function CamposDeTrabajo({
   ctx,
-  borrador,
+  borrador: b,
   cambiar,
   materias,
   errores,
-  tallaBloqueada = false,
+  tipoBloqueado = false,
   fechaBloqueada = false,
 }: {
   ctx: ContextoDeModulo;
-  borrador: BorradorDeEntregable;
-  cambiar: (cambios: Partial<BorradorDeEntregable>) => void;
-  /** Materias elegibles; `null` = la materia no se puede cambiar (edición). */
+  borrador: BorradorDeTrabajo;
+  cambiar: (c: Partial<BorradorDeTrabajo>) => void;
+  /** Materias elegibles; null = la materia no se cambia (edición). */
   materias: readonly Materia[] | null;
   errores: ErroresDeCampo;
-  tallaBloqueada?: boolean;
+  tipoBloqueado?: boolean;
   fechaBloqueada?: boolean;
 }) {
-  const { t, formatos } = ctx;
-  const instante = formatos.desdeEntradaLocal(borrador.venceEnLocal);
+  const { t } = ctx;
+  const instante = ctx.formatos.desdeEntradaLocal(b.venceEnLocal);
   const fechaPasada = !fechaBloqueada && instante !== null && Date.parse(instante) < ctx.reloj.ahora().getTime();
-  const valor = (e: Event) => (e.currentTarget as HTMLInputElement | HTMLSelectElement).value;
-
+  const valor = (e: Event) => (e.currentTarget as HTMLInputElement).value;
   return (
     <>
       {materias && (
         <Campo campo="materia" etiqueta={t('universidad.campo.materia')} error={errores.materia}>
-          <select
-            id={idDeControl('materia')}
-            value={borrador.materiaId}
-            onChange={(e) => cambiar({ materiaId: valor(e) })}
-            {...aria('materia', errores.materia)}
-          >
+          <select value={b.materiaId} onChange={(e) => cambiar({ materiaId: valor(e) })} {...aria('materia', errores.materia)}>
             <option value="">{t('universidad.campo.elegirMateria')}</option>
             {materias.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.nombre}
+                {m.nombre} ({m.periodo})
               </option>
             ))}
           </select>
         </Campo>
       )}
-
       <Campo campo="titulo" etiqueta={t('universidad.campo.titulo')} ayuda={t('universidad.campo.tituloAyuda', { max: TITULO_MAX })} error={errores.titulo}>
-        <input
-          id={idDeControl('titulo')}
-          value={borrador.titulo}
-          maxLength={TITULO_MAX}
-          autoComplete="off"
-          onInput={(e) => cambiar({ titulo: valor(e) })}
-          {...aria('titulo', errores.titulo, true)}
-        />
+        <input value={b.titulo} maxLength={TITULO_MAX} autoComplete="off" onInput={(e) => cambiar({ titulo: valor(e) })} {...aria('titulo', errores.titulo, true)} />
       </Campo>
-
-      <Campo campo="tipo" etiqueta={t('universidad.campo.tipo')}>
-        <select id={idDeControl('tipo')} value={borrador.tipo} onChange={(e) => cambiar({ tipo: valor(e) as TipoDeEntregable })}>
-          {TIPOS.map((tipo) => (
-            <option key={tipo} value={tipo}>
-              {t(`universidad.tipo.${tipo}`)}
-            </option>
-          ))}
-        </select>
-      </Campo>
-
+      <div class="filtros">
+        <Campo campo="tipo" etiqueta={t('universidad.campo.tipo')} ayuda={tipoBloqueado ? t('universidad.campo.tipoBloqueado') : undefined} error={errores.tipo}>
+          <select value={b.tipo} disabled={tipoBloqueado} onChange={(e) => cambiar({ tipo: valor(e) as TipoDeTrabajo })} {...aria('tipo', errores.tipo, tipoBloqueado)}>
+            {TIPOS.map((x) => (
+              <option key={x} value={x}>
+                {t(`universidad.tipo.${x}`)}
+              </option>
+            ))}
+          </select>
+        </Campo>
+        <Campo campo="peso" etiqueta={t('universidad.campo.peso')} ayuda={t('universidad.campo.pesoAyuda')} error={errores.peso}>
+          <input inputMode="decimal" value={b.peso} disabled={tipoBloqueado} autoComplete="off" onInput={(e) => cambiar({ peso: valor(e) })} {...aria('peso', errores.peso, true)} />
+        </Campo>
+      </div>
       <Campo
         campo="venceEn"
         etiqueta={t('universidad.campo.venceEn')}
         ayuda={fechaBloqueada ? t('universidad.campo.venceEnBloqueada') : t('universidad.campo.venceEnAyuda')}
         error={errores.venceEn}
-        despues={
-          fechaPasada && (
-            <span class="aviso aviso--alerta" role="status">
-              {t('universidad.campo.fechaPasada')}
-            </span>
-          )
-        }
+        despues={fechaPasada && <span class="aviso aviso--alerta">{t('universidad.campo.fechaPasada')}</span>}
       >
-        <input
-          id={idDeControl('venceEn')}
-          type="datetime-local"
-          value={borrador.venceEnLocal}
-          disabled={fechaBloqueada}
-          onInput={(e) => cambiar({ venceEnLocal: valor(e) })}
-          {...aria('venceEn', errores.venceEn, true)}
-        />
+        <input type="datetime-local" value={b.venceEnLocal} disabled={fechaBloqueada} onInput={(e) => cambiar({ venceEnLocal: valor(e) })} {...aria('venceEn', errores.venceEn, true)} />
       </Campo>
-
-      <GrupoDeOpciones
-        nombre="prioridad"
-        leyenda={t('universidad.campo.prioridad')}
-        opciones={PRIORIDADES}
-        valor={borrador.prioridad}
-        etiqueta={(p) => t(`universidad.prioridad.${p}`)}
-        alCambiar={(prioridad) => cambiar({ prioridad })}
-      />
-
-      <GrupoDeOpciones
-        nombre="talla"
-        leyenda={t('universidad.campo.talla')}
-        opciones={TALLAS}
-        valor={borrador.talla}
-        etiqueta={(talla) => talla}
-        alCambiar={(talla) => cambiar({ talla })}
-        desactivado={tallaBloqueada}
-        ayuda={tallaBloqueada ? t('universidad.campo.tallaBloqueada') : t('universidad.campo.tallaAyuda')}
-        error={errores.talla}
-      />
+      <fieldset class="grupo grupo--en-linea">
+        <legend>{t('universidad.campo.prioridad')}</legend>
+        {PRIORIDADES.map((p) => (
+          <label key={p} class="opcion">
+            <input type="radio" name="universidad-prioridad" checked={b.prioridad === p} onChange={() => cambiar({ prioridad: p })} />
+            {t(`universidad.prioridad.${p}`)}
+          </label>
+        ))}
+      </fieldset>
+      <Campo campo="descripcion" etiqueta={t('universidad.campo.descripcion')} error={errores.descripcion}>
+        <textarea rows={3} value={b.descripcion} maxLength={DESCRIPCION_MAX} onInput={(e) => cambiar({ descripcion: (e.currentTarget as HTMLTextAreaElement).value })} {...aria('descripcion', errores.descripcion)} />
+      </Campo>
     </>
   );
 }

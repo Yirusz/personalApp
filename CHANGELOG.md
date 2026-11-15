@@ -4,6 +4,27 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado
 
 ## [Sin publicar]
 
+## [0.4.0] — 2026-11-15 · Iteración 3: revisión de Universidad
+
+### Agregado
+- **Materias** con profesor, periodo académico (sugerido: 2026-2) y color/créditos editables; nombre único por periodo; agrupadas por periodo.
+- **Trabajos** (antes "entregables") de tipo tarea, taller, quiz, parcial, proyecto o exposición, con descripción y **peso %** opcional.
+- Estados explícitos **pendiente → en progreso → entregado → calificado**, o **cancelado**; "Reabrir" deliberado (avisa que borra la fecha de entrega y la nota). Se guarda la fecha real de entrega y si fue a tiempo.
+- **Nota** 0,0–5,0 con un decimal (guardada como entero en décimas).
+- **Subtareas** con casillas y barra de progreso (no dan XP).
+- **Próximas entregas** agrupadas en Vencido / Hoy / Próximos 7 días / Más adelante, con filtros por materia y estado que se conservan.
+- Núcleo: **integración por consulta** (ADR-0013). Un módulo declara `proveedores` (fuentes de calendario y referencias) y los demás los consultan con `ctx.integraciones`, sin importarse ni leer almacenes ajenos.
+- Universidad registra la fuente `universidad.entregas` (el calendario muestra estado y color actuales, enlaza a la ficha) y las referencias `universidad.materia` / `universidad.trabajo` para Estudio y Notas.
+- RPG: capacidades genéricas `xpPorValor` y `bonoPorUmbral`; reglas `TrabajoCreado` (3), `TrabajoEntregado` (tarea 10 · quiz 15 · taller 20 · exposición 40 · parcial 50 · proyecto 80; ×1,2 a tiempo; ×1,25 si vale ≥ 20 %) y `TrabajoCalificado` (5) (ADR-0014).
+
+### Cambiado
+- La talla S/M/L desaparece; el esfuerzo se deduce del tipo (ADR-0014).
+- El Calendario consulta las fuentes registradas por rango y omite la copia por eventos de los módulos que ya ofrecen fuente; las fuentes que fallan se informan por nombre.
+- "Esta semana" es una ventana móvil de 7 días (antes, en "Próximos vencimientos", 72 h).
+
+### Migración
+- Universidad v2 convierte los datos de la iteración 1 (tipos, estados, `completadoEn` → `entregadoEn`, periodo según la fecha de creación). Los eventos `Entregable*` del historial conservan sus reglas de XP.
+
 ## [0.3.0] — 2026-11-15 · Iteración 2: Calendario
 
 ### Agregado

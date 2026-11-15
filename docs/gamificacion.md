@@ -1,10 +1,10 @@
 # Reglas de gamificación v1
 
-Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no código). Este documento la explica. Diseño y razones: ADR-0005.
+Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no código). Este documento la explica. Diseño y razones: ADR-0005 y ADR-0014 (XP por tipo de trabajo).
 
 ## 1. Principios
 1. **La XP nunca baja.** No hay castigos; perder una racha solo quita el multiplicador.
-2. **Se premia el resultado, no la cantidad de clics.** Esfuerzo declarado (talla), topes diarios y rendimiento decreciente.
+2. **Se premia el resultado, no la cantidad de clics.** Valor según el tipo de trabajo (dato objetivo, ADR-0014), topes diarios y rendimiento decreciente.
 3. **Los módulos no saben de puntos.** Publican eventos; el RPG decide su valor.
 4. **Día = día local de Bogotá** (`America/Bogota`); semana = lunes a domingo.
 
@@ -14,16 +14,18 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 |---|---|---|---|---|
 | `ejemplo.RegistroCreado` | 1 | Disciplina | Máx. 5 XP/día | ✅ fundación |
 | `universidad.MateriaCreada` | 5 | Organización | Máx. 20 XP/día · una vez por `materiaId` | ✅ iteración 1 |
-| `universidad.EntregableCreado` | 3 | Organización | Solo si se registra con ≥ 48 h de antelación · máx. 15 XP/día · una vez por `entregableId` | ✅ iteración 1 |
-| `universidad.EntregableCompletado` | S 10 · M 35 · L 100 | Disciplina | ×1,2 si `aTiempo` · 0 si se completa < 10 min después de crearlo · máx. 300 XP/día · una vez por `entregableId` | ✅ iteración 1 |
+| `universidad.TrabajoCreado` | 3 | Organización | Solo si se registra con ≥ 48 h de antelación · máx. 15 XP/día · una vez por `trabajoId` | ✅ iteración 3 |
+| `universidad.TrabajoEntregado` | tarea 10 · quiz 15 · taller 20 · exposición 40 · parcial 50 · proyecto 80 | Disciplina | ×1,2 si `aTiempo` · ×1,25 si `peso` ≥ 20 % · 0 si se entrega < 10 min después de crearlo · máx. 300 XP/día · una vez por `trabajoId` (reabrir no da doble premio) | ✅ iteración 3 |
+| `universidad.TrabajoCalificado` | 5 | Organización | Una vez por `trabajoId` (corregir la nota no suma) · máx. 25 XP/día. No depende de la nota: se premia registrar, no sacar buena nota | ✅ iteración 3 |
+| `universidad.EntregableCreado` / `EntregableCompletado` (v1) | 3 / S 10 · M 35 · L 100 | — | Se conservan para recalcular el historial de la iteración 1; ya no se publican | histórico |
 | `estudio.PomodoroCompletado` | 10 | Intelecto | 1.º–8.º del día: 100 % · 9.º–12.º: 50 % · 13.º en adelante: 0 | iteración RPG |
 | `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día | ✅ |
 | `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | ✅ iteración 2 |
 | `calendario.EventoMarcadoCumplido` | 15 | Disciplina | Solo bloques de compromiso (15 min–8 h), marcables desde que empiezan hasta 48 h después · una vez por `ocurrenciaId` · máx. 45 XP/día | ✅ iteración 2 |
 | `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | "una vez" ✅ · racha en iteración RPG |
-| `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Renombrada,Archivada,Restaurada}`, `Entregable{Editado,Iniciado,Reprogramado,Reabierto,Eliminado}` | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
+| `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Editada,Archivada,Restaurada}`, `Trabajo{Editado,Iniciado,Reprogramado,Cancelado,Reabierto,Eliminado}`, subtareas (no publican eventos) | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
 
-**Por qué la talla es superlineal:** partir una L (100) en 3 M da 105 (≈ neutro, y cada M exige su propio registro y plazo); partir una M (35) en 3 S da 30 (pierde). Un entregable creado y completado en menos de 10 min no da nada.
+**Por qué por tipo y no por talla (ADR-0014):** el tipo lo fija el programa de la materia, no una autoevaluación. Partir un proyecto (80) en 4 tareas (40) pierde; el peso alto (≥ 20 %) da ×1,25 sin depender de que se declare. Ejemplo: parcial a tiempo que vale 25 % → 50 × 1,2 × 1,25 = **75 XP**. Un trabajo creado y entregado en menos de 10 min no da nada; las subtareas nunca dan XP.
 
 ## 3. Fórmulas
 
@@ -35,12 +37,12 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 |---|---|---|---|---|---|
 | XP acumulada | 100 | 282 | 800 | 2 700 | 8 281 |
 
-Con un día típico (~4 Pomodoros + 1 entregable M a tiempo ≈ 80–100 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
+Con un día típico (~4 Pomodoros + 1 taller a tiempo ≈ 60–70 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
 
 **Orden de cálculo de un asiento** (función pura `calcularXp` en `modulos/rpg/dominio/reglas.ts`; los pasos 4 y 5 llegan en la iteración RPG):
-1. Base: `xp` o `xpPorTalla[talla]` (talla desconocida → 0).
+1. Base: `xp`, `xpPorTalla[talla]` o `xpPorValor.valores[datos[campo]]` (valor desconocido → 0). Exactamente una de las tres.
 2. Condiciones: `minMinutosDesdeCreacion`, `minAntelacionHoras`, `unaVezPor` → si no se cumplen, 0.
-3. Puntualidad: × `multiplicadorPuntual` si `aTiempo`.
+3. Puntualidad: × `multiplicadorPuntual` si `aTiempo`; luego × `bonoPorUmbral.multiplicador` si `datos[campo] ≥ minimo` (genérico; hoy: peso ≥ 200 décimas de %).
 4. Tramos diarios por cantidad (`tramosDiarios`).
 5. Racha: × (1 + min(0,05 · semanas, 0,30)), salvo `sinMultiplicadorDeRacha`.
 6. Tope diario: `min(xp, limiteDiarioXp − acumuladoHoyDelTipo)`, nunca negativo.
@@ -51,7 +53,7 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 **Oro:** oro disponible = ⌊XP total / 10⌋ − oro gastado. Se gasta en recompensas que define el usuario (con costo en oro). La XP no se gasta.
 
 ## 4. Racha semanal
-- Semana **cumplida** si hubo actividad (`PomodoroCompletado` o `EntregableCompletado`) en **≥ 4 de 7 días**.
+- Semana **cumplida** si hubo actividad (`PomodoroCompletado`, `TrabajoEntregado` o, del historial, `EntregableCompletado`) en **≥ 4 de 7 días**.
 - Cada semana cumplida consecutiva suma +5 % de multiplicador (tope +30 %) y da 50 XP.
 - **Comodín:** se gana 1 por cada 4 semanas cumplidas (máximo 2); se consume automáticamente para salvar una semana no cumplida.
 - Sin comodines, la racha vuelve a 0. **No se pierde XP, nivel ni oro.**
@@ -60,7 +62,7 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 | Atributo | Qué refleja | Fuentes v1 |
 |---|---|---|
 | Intelecto | Estudio enfocado | Pomodoros |
-| Disciplina | Cumplir lo prometido | Entregables completados, rachas |
+| Disciplina | Cumplir lo prometido | Trabajos entregados, bloques de compromiso, rachas |
 | Organización | Planear con anticipación | Materias, entregables registrados con tiempo, revisión semanal |
 | Bienestar | Ritmo sostenible | Descansos completados; el tope de Pomodoros evita premiar jornadas excesivas |
 

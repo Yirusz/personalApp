@@ -1,6 +1,6 @@
 # Modelo de dominio — Ludus
 
-Un **bounded context por módulo**. Cada contexto tiene su lenguaje, sus agregados y sus eventos; se comunican solo por eventos de dominio (ADR-0009). Los nombres del código coinciden con los de este documento (lenguaje ubicuo en español).
+Un **bounded context por módulo**. Cada contexto tiene su lenguaje, sus agregados y sus eventos. Se comunican por **eventos de dominio** para reaccionar (ADR-0009) y por **consultas a proveedores registrados** para leer datos de otro módulo (ADR-0013); nunca leen el almacén de otro. Los nombres del código coinciden con los de este documento (lenguaje ubicuo en español).
 
 ## 1. Mapa de contextos
 
@@ -12,20 +12,20 @@ flowchart LR
   P["Progreso · RPG<br/>(core)"]
   N["Notas<br/>(post-MVP)"]
 
-  U -- "EntregableCreado / Reprogramado / Completado<br/>(con datos.agenda)" --> C
-  U -- "MateriaCreada, Entregable*" --> P
+  C -. "consulta la fuente<br/>universidad.entregas" .-> U
+  U -- "MateriaCreada, Trabajo*" --> P
   E -- "PomodoroCompletado, DescansoCompletado" --> P
   C -- "SemanaPlanificada" --> P
-  E -. "lee materias vía evento MateriaCreada<br/>(proyección propia)" .- U
-  N -. "futuro: NotaCreada" .-> P
+  E -. "buscarReferencias<br/>universidad.materia / .trabajo" .-> U
+  N -. "buscarReferencias (futuro)" .-> U
 ```
 
 | Relación | Patrón (DDD) | Detalle |
 |---|---|---|
 | Todos → Núcleo | Shared Kernel | Tipos mínimos y estables: `EventoDeDominio`, `ElementoDeAgenda`, `Reloj`, ids. |
-| Universidad → Calendario | Published Language | Calendario **no** conoce Universidad: proyecta cualquier evento que traiga `datos.agenda`. Un módulo futuro aparece en el calendario sin tocar Calendario (OCP). |
+| Universidad → Calendario | Open Host Service + Published Language (ADR-0013) | Universidad registra la fuente `universidad.entregas` (`ElementoDeAgenda`); el Calendario consulta **todas** las fuentes registradas por rango sin saber de quién son. Además sigue proyectando eventos con `datos.agenda` de módulos que no registren fuente (OCP). |
 | Universidad, Estudio, Calendario → RPG | Publisher / Subscriber (conformista del lado RPG) | El RPG se suscribe a `*` y decide el valor con `reglas.v1.json`. Los publicadores no saben que existe. |
-| Universidad → Estudio | Proyección local | Estudio mantiene su propia copia mínima de materias (id, nombre, color) alimentada por `MateriaCreada/Renombrada/Archivada`. Nada de consultas cruzadas. |
+| Universidad → Estudio, Notas | Open Host Service (ADR-0013) | Universidad registra referencias de tipo `universidad.materia` y `universidad.trabajo`. Los consumidores guardan `{tipo, id}` y resuelven con `ctx.integraciones.buscarReferencias` (sin copias ni imports). |
 
 ### Lenguaje publicado: `ElementoDeAgenda`
 Cualquier evento puede incluir en sus datos:
@@ -44,7 +44,7 @@ agenda: {
 
 ## 2. Contexto Universidad
 
-**Lenguaje:** *Materia* (asignatura del semestre), *Entregable* (trabajo, tarea, parcial u otro con fecha de entrega), *Talla* (esfuerzo declarado S/M/L), *Vencimiento*.
+**Lenguaje:** *Materia* (asignatura de un *periodo académico*), *Trabajo* (lo que se entrega o presenta: tarea, taller, quiz, parcial, proyecto, exposición), *Subtarea*, *Peso* (% de la nota de la materia), *Nota* (0,0–5,0), *Entrega* (fecha real en que se entregó), *Indicador de urgencia* (vencido, hoy, próximos 7 días, más adelante). Versión 2 (iteración 3, ADR-0013 y ADR-0014); el antiguo *Entregable* se migró a *Trabajo*.
 
 ```mermaid
 classDiagram
@@ -52,62 +52,87 @@ classDiagram
     <<Agregado>>
     +Id id
     +NombreDeMateria nombre
+    +Texto profesor
+    +PeriodoAcademico periodo
     +ColorDeMateria color
     +Creditos creditos
     +bool archivada
-    +renombrar(nombre)
+    +editar(datos)
     +archivar()
     +restaurar()
   }
-  class Entregable {
+  class Trabajo {
     <<Agregado>>
     +Id id
     +Id materiaId
     +Titulo titulo
-    +TipoDeEntregable tipo
+    +TipoDeTrabajo tipo
+    +Texto descripcion
     +Instante venceEn
     +Prioridad prioridad
-    +Talla talla
-    +EstadoDeEntregable estado
-    +Instante creadoEn
-    +Instante completadoEn
-    +iniciar(ahora)
-    +completar(ahora) EntregableCompletado
+    +Peso peso
+    +EstadoDeTrabajo estado
+    +Subtarea[] subtareas
+    +Instante entregadoEn
+    +Nota nota
+    +iniciar()
+    +entregar(ahora) aTiempo
+    +calificar(nota)
+    +cancelar()
     +reabrir()
-    +reprogramar(nuevaFecha)
-    +editar(titulo, tipo, prioridad, talla)
+    +reprogramar(fecha)
+    +agregarSubtarea(texto)
+    +marcarSubtarea(id, hecha)
   }
-  class EstadoDeEntregable {
+  class Subtarea {
+    <<Entidad interna>>
+    +Id id
+    +Texto texto
+    +bool hecha
+  }
+  class EstadoDeTrabajo {
     <<enum>>
     Pendiente
-    EnCurso
-    Completado
+    EnProgreso
+    Entregado
+    Calificado
+    Cancelado
   }
-  class Talla {
-    <<VO>>
-    S
-    M
-    L
-  }
-  Entregable --> Materia : materiaId (por id)
-  Entregable *-- EstadoDeEntregable
-  Entregable *-- Talla
+  Trabajo --> Materia : materiaId (por id)
+  Trabajo *-- Subtarea
+  Trabajo *-- EstadoDeTrabajo
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pendiente
+  Pendiente --> EnProgreso : iniciar
+  Pendiente --> Entregado : entregar
+  EnProgreso --> Entregado : entregar
+  Entregado --> Calificado : calificar
+  Calificado --> Calificado : corregir nota
+  Pendiente --> Cancelado : cancelar
+  EnProgreso --> Cancelado : cancelar
+  Entregado --> EnProgreso : reabrir
+  Calificado --> EnProgreso : reabrir
+  Cancelado --> EnProgreso : reabrir
 ```
 
 | Tipo | Elementos |
 |---|---|
-| Agregados | `Materia`, `Entregable` (referencia a Materia **por id**) |
-| Value objects | `NombreDeMateria` (1–60, sin espacios extremos), `ColorDeMateria` (de una paleta de tokens), `Creditos` (0–10), `Titulo` (1–120), `TipoDeEntregable` (trabajo, tarea, parcial, otro), `Prioridad` (baja, media, alta), `Talla` (S, M, L), `Instante` (UTC ISO 8601) |
-| Invariantes | Nombre de materia único entre las **activas** (sin distinguir mayúsculas ni espacios repetidos; lo verifica el caso de uso, también al renombrar y al restaurar). Una materia archivada no recibe entregables nuevos. La talla no cambia una vez `EnCurso` o `Completado`. `completadoEn` existe si y solo si el estado es `Completado`. No se completa dos veces sin reabrir. **Reabrir** vuelve a `EnCurso` (la talla sigue bloqueada). Un entregable completado no se reprograma (primero se reabre). |
-| Transiciones | `Pendiente → EnCurso → Completado`; `Pendiente → Completado`; `Completado → (reabrir) → EnCurso`. Eliminar: desde cualquier estado, borrado físico (la historia queda en el registro de eventos). |
-| Visibilidad | Los entregables de una materia archivada se conservan (historial y estadísticas) pero no aparecen en las listas activas ni en "Próximos vencimientos". |
-| Reglas derivadas | `aTiempo = completadoEn ≤ venceEn`. `minutosDesdeCreacion` y `antelacionHoras` se calculan con el `Reloj` y viajan en el evento. |
-| Eventos (v1) | `universidad.MateriaCreada {materiaId, nombre, color}` · `MateriaRenombrada {materiaId, nombre}` · `MateriaArchivada {materiaId}` · `MateriaRestaurada {materiaId}` · `EntregableCreado {entregableId, materiaId, talla, venceEn, antelacionHoras, agenda}` · `EntregableEditado {entregableId, campos[], talla, agenda}` · `EntregableReprogramado {entregableId, venceEnAnterior, venceEn, agenda}` · `EntregableIniciado {entregableId}` · `EntregableCompletado {entregableId, materiaId, talla, aTiempo, minutosDesdeCreacion, agenda}` · `EntregableReabierto {entregableId, agenda}` · `EntregableEliminado {entregableId, agenda (estado "eliminado")}`. Catálogo en código: `modulos/universidad/aplicacion/comun.ts`. Una operación sin cambios reales (mismo nombre, misma fecha) no publica nada. |
-| Implementación | Iteración 1 (`web/src/modulos/universidad/`). `antelacionHoras` = horas completas entre el registro y `venceEn` (negativa si ya venció). `minutosDesdeCreacion` = minutos completos entre `creadoEn` y `completadoEn`. |
+| Agregados | `Materia`, `Trabajo` (referencia a Materia **por id**; las subtareas viven **dentro** del agregado) |
+| Value objects | `NombreDeMateria` (1–60), profesor (0–80), `PeriodoAcademico` (1–20, p. ej. `2026-2`; sugerido: ene–jun = 1, jul–dic = 2), `ColorDeMateria` (paleta de tokens), `Creditos` (0–10, opcional), `Titulo` (1–120), descripción (0–2000), `TipoDeTrabajo`, `Prioridad` (baja, media, alta), **`Peso`** entero en décimas de % (1–1000 ↔ 0,1–100 %, opcional), **`Nota`** entero en décimas (0–50 ↔ 0,0–5,0; aprobatoria ≥ 30), `Instante` (UTC ISO 8601). Sin flotantes. |
+| Invariantes | Nombre de materia único entre las **activas del mismo periodo** (sin distinguir mayúsculas ni espacios). Una materia archivada no recibe trabajos nuevos. Transiciones **solo** las del diagrama: calificado o cancelado no vuelven a pendiente; **reabrir** es deliberado, lleva a `EnProgreso` y borra `entregadoEn` y `nota`. `entregadoEn` existe si y solo si el estado es Entregado o Calificado; `nota` solo en Calificado. Tipo y peso no cambian en Entregado/Calificado. Solo se reprograma un trabajo activo (pendiente o en progreso). Máximo 50 subtareas de 1–200 caracteres; no se agregan a un trabajo cancelado. |
+| Reglas derivadas | `aTiempo = entregadoEn ≤ venceEn` (Reloj inyectado). Indicador por **día local** (America/Bogota): vencido si `venceEn < ahora`; hoy; *próximos 7 días* (ventana móvil de los 6 días siguientes; con semana calendario quedaría vacío cada domingo); más adelante. Los no activos no tienen indicador. |
+| Visibilidad | Los trabajos de una materia archivada se conservan (historial, calendario, XP) pero no salen en "Próximas entregas" ni en los filtros. |
+| Eventos (v1) | `universidad.MateriaCreada {materiaId, nombre, color, periodo}` · `MateriaEditada {materiaId, campos[]}` · `MateriaArchivada {materiaId}` · `MateriaRestaurada {materiaId}` · `TrabajoCreado {trabajoId, materiaId, tipo, peso, venceEn, antelacionHoras}` · `TrabajoEditado {trabajoId, campos[]}` · `TrabajoReprogramado {trabajoId, venceEnAnterior, venceEn}` · `TrabajoIniciado {trabajoId}` · `TrabajoEntregado {trabajoId, materiaId, tipo, peso, aTiempo, minutosDesdeCreacion}` · `TrabajoCalificado {trabajoId, materiaId, nota, aprobado, correccion}` · `TrabajoCancelado {trabajoId}` · `TrabajoReabierto {trabajoId, desde}` · `TrabajoEliminado {trabajoId}`. Las **subtareas no publican eventos**. Una operación sin cambios (misma nota, misma fecha) no publica nada. Los eventos `Entregable*` y `MateriaRenombrada` de la v1 quedan en el historial con sus reglas. Catálogo: `modulos/universidad/aplicacion/comun.ts`. |
+| Proveedores (ADR-0013) | Fuente de calendario `universidad.entregas`: trabajos no cancelados del rango (índice `por_vencimiento`), con color de la materia, `hecho` si Entregado/Calificado y `ruta` a la ficha. Referencias `universidad.materia` (detalle: periodo; inactiva si archivada) y `universidad.trabajo` (detalle: materia; inactiva si no está activo). |
+| Almacenamiento | Almacenes `materias` y `entregables` (nombre conservado). Migración v2 convierte los datos de la v1 al leer y al migrar: `trabajo` → taller, `otro` → tarea; `enCurso` → enProgreso; `completado` → entregado; `completadoEn` → `entregadoEn`; sin talla; profesor vacío y periodo según la fecha de creación. |
+| Implementación | `web/src/modulos/universidad/` (dominio en `dominio/{materia,trabajo,nota,consultas,errores}.ts`). `antelacionHoras` = horas completas entre registro y vencimiento; `minutosDesdeCreacion` = minutos entre `creadoEn` y `entregadoEn`. |
 
 ## 3. Contexto Calendario
 
-**Lenguaje:** *Evento* (algo que el usuario agenda), *Serie* (evento recurrente), *Ocurrencia* (una aparición de la serie, identificada por su **fecha original**), *Excepción* (ocurrencia cancelada o modificada), *Elemento externo* (lo que publican otros módulos con `datos.agenda`), *Recordatorio*, *Aviso* (un recordatorio vencido de una ocurrencia), *Bloque de compromiso*, *Revisión semanal*. Implementado en la iteración 2 (`web/src/modulos/calendario/`, ADR-0011 y ADR-0012).
+**Lenguaje:** *Evento* (algo que el usuario agenda), *Serie* (evento recurrente), *Ocurrencia* (una aparición de la serie, identificada por su **fecha original**), *Excepción* (ocurrencia cancelada o modificada), *Elemento externo* (lo que aportan otros módulos: fuentes registradas, ADR-0013, o eventos con `datos.agenda`), *Recordatorio*, *Aviso* (un recordatorio vencido de una ocurrencia), *Bloque de compromiso*, *Revisión semanal*. Implementado en la iteración 2 (`web/src/modulos/calendario/`, ADR-0011 y ADR-0012).
 
 ```mermaid
 classDiagram

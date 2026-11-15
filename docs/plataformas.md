@@ -73,3 +73,13 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 11. **Sin conexión:** modo avión, recargar el calendario y crear un evento: todo funciona.
 12. **Revisión semanal:** en la vista semana o en Inicio, "Semana planificada" → "Planificada ✓" y +30 XP una sola vez.
 
+### Iteración 3 — Revisión de Universidad (guion de prueba manual, ~12 min por entorno)
+1. **Datos viejos:** si ya usabas la 0.2/0.3, abrir Universidad: tus entregables aparecen como trabajos (trabajo → taller, otro → tarea; completados → entregados) y la XP no cambia.
+2. **Materias:** crear "Física I" (Dra. Pérez, 2026-2, azul) y "Cálculo II". Intentar otra "cálculo ii" en 2026-2 → error; en 2026-1 → se crea. Editar Cálculo II: profesor y color morado → el color cambia también en el calendario.
+3. **Registrar:** "Registrar trabajo" con título vacío y peso 150 → ambos errores a la vez. Registrar un taller vencido (hace 3 h, 15 %), un quiz para hoy 23:00, un parcial para pasado mañana (25 %) y un proyecto para dentro de 20 días.
+4. **Próximas entregas:** se ven los grupos Vencido / Hoy / Próximos 7 días / Más adelante con etiquetas de color.
+5. **Ficha:** abrir el parcial → agregar 2 subtareas (Enter) y marcar una → "1/2". Empezar → Marcar entregado → "a tiempo". Nota "5,7" → error y foco en el campo; "4,2" → "Nota 4,2". Tipo y peso quedan bloqueados. Reabrir → vuelve a "En progreso" sin nota.
+6. **XP:** en Progreso, entregar en menos de 10 min tras crearlo da 0 ("muy rápido"); reabrir y volver a entregar no suma. Para ver los 75 XP de un parcial a tiempo con peso ≥ 20 %, crearlo y entregarlo con más de 10 min de diferencia.
+7. **Calendario:** las entregas aparecen con el color de la materia, 🔒 y "de Universidad"; la entregada sale tachada con ✓; tocarla abre la ficha del trabajo. No hay duplicados.
+8. **Filtros, deshacer, sin conexión:** filtrar "Calificados", recargar → se conserva. Eliminar un trabajo → Deshacer. Archivar una materia → Deshacer (Ctrl+Z en escritorio). En modo avión, recargar y registrar/entregar: todo funciona.
+9. **Android:** el teclado numérico aparece en peso y nota; atrás vuelve de la ficha a la lista; los botones de subtarea (✕) se tocan sin errores.

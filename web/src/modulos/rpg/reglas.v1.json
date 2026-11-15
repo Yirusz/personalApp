@@ -10,7 +10,7 @@
     "bonoMaximo": 0.3,
     "semanasPorComodin": 4,
     "comodinesMaximos": 2,
-    "eventosQueCuentan": ["estudio.PomodoroCompletado", "universidad.EntregableCompletado"]
+    "eventosQueCuentan": ["estudio.PomodoroCompletado", "universidad.EntregableCompletado", "universidad.TrabajoEntregado"]
   },
   "reglas": [
     {
@@ -42,6 +42,31 @@
       "minMinutosDesdeCreacion": 10,
       "limiteDiarioXp": 300,
       "unaVezPor": "entregableId"
+    },
+    {
+      "evento": "universidad.TrabajoCreado",
+      "xp": 3,
+      "atributo": "organizacion",
+      "limiteDiarioXp": 15,
+      "minAntelacionHoras": 48,
+      "unaVezPor": "trabajoId"
+    },
+    {
+      "evento": "universidad.TrabajoEntregado",
+      "xpPorValor": { "campo": "tipo", "valores": { "tarea": 10, "quiz": 15, "taller": 20, "exposicion": 40, "parcial": 50, "proyecto": 80 } },
+      "atributo": "disciplina",
+      "multiplicadorPuntual": 1.2,
+      "bonoPorUmbral": { "campo": "peso", "minimo": 200, "multiplicador": 1.25 },
+      "minMinutosDesdeCreacion": 10,
+      "limiteDiarioXp": 300,
+      "unaVezPor": "trabajoId"
+    },
+    {
+      "evento": "universidad.TrabajoCalificado",
+      "xp": 5,
+      "atributo": "organizacion",
+      "limiteDiarioXp": 25,
+      "unaVezPor": "trabajoId"
     },
     {
       "evento": "estudio.PomodoroCompletado",

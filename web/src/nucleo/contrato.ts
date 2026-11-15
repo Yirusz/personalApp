@@ -9,8 +9,9 @@
  * - Un módulo solo ve SUS almacenes (nombres cortos; el núcleo antepone `<id>_`).
  * - Solo publica los eventos que declara en `eventos`, con tipo `<id>.<Nombre>`.
  * - No importa código de otros módulos (lo verifica `arquitectura.test.ts`).
- * - Se comunica con los demás únicamente a través de eventos.
+ * - Se comunica con los demás por eventos y, por consulta, con proveedores (ADR-0013).
  */
+import type { ColorCategorico, ElementoDeAgenda } from './dominio/agenda';
 import type { ComponentType } from 'preact';
 import type { EventoDeDominio } from './dominio/evento';
 import type { Reloj } from './dominio/reloj';
@@ -89,6 +90,73 @@ export interface Diagnostico {
   registrar(nivel: 'error' | 'aviso' | 'info', origen: string, mensaje: string, detalle?: unknown): void;
 }
 
+// ---------------------------------------------------------------------------
+// Integración por consulta (ADR-0013): un módulo ofrece datos de SU almacén a
+// los demás sin que lo conozcan. El núcleo los agrega y aísla los fallos.
+// ---------------------------------------------------------------------------
+
+/** Rango de consulta en instantes UTC ISO 8601: [desde, hasta). */
+export interface RangoDeConsulta {
+  desde: string;
+  hasta: string;
+}
+
+/** Elementos que un módulo aporta al calendario (lenguaje publicado ElementoDeAgenda). */
+export interface FuenteDeCalendario {
+  /** Único en la app: `<modulo>.<nombre>`. */
+  id: string;
+  /** Clave i18n del nombre visible (p. ej. "Entregas de Universidad"). */
+  nombre: string;
+  elementos(rango: RangoDeConsulta): Promise<ElementoDeAgenda[]>;
+  /** Avisa cuando sus datos cambian; devuelve cómo dejar de escuchar. */
+  alCambiar(escucha: () => void): () => void;
+}
+
+/** Referencia a una entidad de otro módulo, para vincularla (p. ej. Estudio → materia). */
+export interface ReferenciaDeEntidad {
+  /** `<modulo>.<entidad>`, p. ej. `universidad.materia`. */
+  tipo: string;
+  id: string;
+  titulo: string;
+  detalle?: string;
+  color?: ColorCategorico;
+  ruta?: string;
+  /** false = archivada, cancelada, terminada… (se sigue pudiendo mostrar). */
+  activa: boolean;
+}
+
+export interface ConsultaDeReferencias {
+  tipo?: string;
+  texto?: string;
+  ids?: readonly string[];
+  incluirInactivas?: boolean;
+  limite?: number;
+}
+
+export interface ProveedorDeReferencias {
+  tipos: readonly string[];
+  buscar(consulta: ConsultaDeReferencias): Promise<ReferenciaDeEntidad[]>;
+  alCambiar?(escucha: () => void): () => void;
+}
+
+export interface Proveedores {
+  fuentesDeCalendario?: readonly FuenteDeCalendario[];
+  referencias?: ProveedorDeReferencias;
+}
+
+export interface ResultadoDeReferencias {
+  referencias: ReferenciaDeEntidad[];
+  /** Proveedores que fallaron (el resto se devuelve igual). */
+  fallos: { modulo: string; error: unknown }[];
+}
+
+/** Lo que el núcleo ofrece a cada módulo para consumir proveedores de otros. */
+export interface Integraciones {
+  fuentesDeCalendario(): readonly { modulo: string; fuente: FuenteDeCalendario }[];
+  tiposDeReferencia(): readonly string[];
+  buscarReferencias(consulta: ConsultaDeReferencias): Promise<ResultadoDeReferencias>;
+}
+
 export type PermisoDeNotificaciones = 'concedido' | 'denegado' | 'preguntar' | 'no-soportado';
 
 /**
@@ -113,6 +181,8 @@ export interface ContextoDeModulo {
   readonly formatos: Formatos;
   readonly diagnostico: Diagnostico;
   readonly notificaciones: Notificador;
+  /** Proveedores de otros módulos (ADR-0013). */
+  readonly integraciones: Integraciones;
   /** Con `reemplazar` no se agrega una entrada al historial. */
   navegar(ruta: string, opciones?: { reemplazar?: boolean }): void;
 }
@@ -172,6 +242,8 @@ export interface DefinicionDeModulo {
    * la función que la detiene. Debe ser liviana y tolerar ser congelada (Android).
    */
   alIniciar?: (ctx: ContextoDeModulo) => () => void;
+  /** Datos que el módulo ofrece por consulta a los demás (ADR-0013). Se llama una vez, con el contexto del propio módulo. */
+  proveedores?: (ctx: ContextoDeModulo) => Proveedores;
 }
 
 /** Ayuda de tipos para declarar un módulo. */

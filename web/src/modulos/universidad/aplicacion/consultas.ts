@@ -1,35 +1,35 @@
-/** Lecturas para las pantallas (sin efectos). */
+/** Lecturas para las pantallas (sin efectos). Siempre pasan por los lectores de datos guardados (versiones anteriores). */
 import type { TransaccionDeLectura } from '../../../nucleo/contrato';
-import type { Entregable } from '../dominio/entregable';
 import type { Materia } from '../dominio/materia';
-import { ENTREGABLES, INDICE_POR_VENCIMIENTO, MATERIAS } from './comun';
+import { trabajoDesdeAlmacen, type Trabajo } from '../dominio/trabajo';
+import { INDICE_POR_VENCIMIENTO, listarMaterias, MATERIAS, TRABAJOS } from './comun';
 
-const porNombre = (a: Materia, b: Materia) => a.nombre.localeCompare(b.nombre, 'es-CO');
+const porPeriodoYNombre = (a: Materia, b: Materia) => b.periodo.localeCompare(a.periodo, 'es-CO') || a.nombre.localeCompare(b.nombre, 'es-CO');
 
 export async function leerMaterias(tx: TransaccionDeLectura): Promise<Materia[]> {
-  return (await tx.listar<Materia>(MATERIAS)).sort(porNombre);
+  return (await listarMaterias(tx)).sort(porPeriodoYNombre);
 }
 
-/** Todos los entregables por fecha de vencimiento. Un semestre tiene decenas; si crece mucho, paginar por índice. */
-export function leerEntregables(tx: TransaccionDeLectura): Promise<Entregable[]> {
-  return tx.listar<Entregable>(ENTREGABLES, { indice: INDICE_POR_VENCIMIENTO });
+export async function leerTrabajos(tx: TransaccionDeLectura): Promise<Trabajo[]> {
+  return (await tx.listar(TRABAJOS, { indice: INDICE_POR_VENCIMIENTO })).map(trabajoDesdeAlmacen);
 }
 
 export interface Panel {
   materias: Materia[];
-  entregables: Entregable[];
+  trabajos: Trabajo[];
 }
 
 export async function leerPanel(tx: TransaccionDeLectura): Promise<Panel> {
-  const [materias, entregables] = await Promise.all([leerMaterias(tx), leerEntregables(tx)]);
-  return { materias, entregables };
+  const [materias, trabajos] = await Promise.all([leerMaterias(tx), leerTrabajos(tx)]);
+  return { materias, trabajos };
 }
 
-export async function leerEntregableConMateria(
-  tx: TransaccionDeLectura,
-  id: string,
-): Promise<{ entregable: Entregable; materia: Materia | undefined } | null> {
-  const entregable = await tx.obtener<Entregable>(ENTREGABLES, id);
-  if (!entregable) return null;
-  return { entregable, materia: await tx.obtener<Materia>(MATERIAS, entregable.materiaId) };
+export async function leerTrabajoConMateria(tx: TransaccionDeLectura, id: string): Promise<{ trabajo: Trabajo; materia: Materia | undefined } | null> {
+  const t = await tx.obtener(TRABAJOS, id);
+  if (!t) return null;
+  const trabajo = trabajoDesdeAlmacen(t);
+  const materia = (await listarMaterias(tx)).find((m) => m.id === trabajo.materiaId);
+  return { trabajo, materia };
 }
+
+export const ALMACENES_DEL_PANEL = [MATERIAS, TRABAJOS];

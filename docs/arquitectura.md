@@ -106,13 +106,15 @@ Archivo `web/src/nucleo/contrato.ts`. Cada módulo exporta por defecto `definirM
 | `eventos` | Catálogo de eventos que publica, con versión y descripción | tipo `<id>.NombreEnPasado` |
 | `suscripciones?(ctx)` | Manejadores de eventos (propios o ajenos) | id único; tipos bien formados |
 | `alIniciar?(ctx)` | Tarea mientras la app está abierta, en cualquier pantalla (recordatorios, temporizadores); devuelve cómo detenerla | errores aislados (Diagnóstico) |
+| `proveedores?(ctx)` | Datos que otros módulos pueden **consultar** (ADR-0013): `fuentesDeCalendario[]` (`ElementoDeAgenda` por rango) y `referencias` (`ReferenciaDeEntidad` por tipo, texto o ids) | creados una vez y perezosamente; si fallan, se ignoran y se anotan en Diagnóstico |
 
-Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, notificaciones, navegar }`. `navegar(ruta, { reemplazar: true })` no agrega una entrada al historial ni mueve el foco (para recorrer periodos sin llenar el botón atrás). `ctx.almacen` solo ve los almacenes del módulo.
+Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, notificaciones, integraciones, navegar }`. `ctx.integraciones` expone `fuentesDeCalendario()`, `tiposDeReferencia()` y `buscarReferencias(consulta)` → `{referencias, fallos}`: así se leen datos de otro módulo sin importarlo ni tocar su almacén. `navegar(ruta, { reemplazar: true })` no agrega una entrada al historial ni mueve el foco (para recorrer periodos sin llenar el botón atrás). `ctx.almacen` solo ve los almacenes del módulo.
 
 ### Cómo agregar un módulo (sin tocar los existentes)
 1. Crear `web/src/modulos/<id>/modulo.ts` con su `definirModulo`.
 2. Declarar migraciones, eventos, textos, rutas y navegación.
 3. Si debe dar XP: agregar reglas en `modulos/rpg/reglas.v1.json` (configuración del RPG, no código).
+3b. Si otros deben ver sus fechas o vincular sus entidades: declarar `proveedores` (el Calendario y los buscadores lo descubren solos).
 4. `npm run check`. El registro y la prueba de arquitectura avisan si algo rompe el contrato.
 
 ### Piezas compartidas para módulos

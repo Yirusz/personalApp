@@ -5,7 +5,7 @@ import type { ContextoDeModulo } from '../../../nucleo/contrato';
 import type { Traductor } from '../../../nucleo/i18n/traductor';
 import { useOcultoPorDeshacer } from '../../../ui/deshacer';
 import { hrefDe } from '../../../ui/enrutador';
-import { ALMACENES_DE_FUENTES, leerFuentes, visiblesEnRango, type Lectura, type Visibles } from '../aplicacion/fuentes';
+import { ALMACENES_DE_FUENTES, combinar, leerFuentes, leerFuentesRegistradas, visiblesEnRango, type Lectura, type LecturaRegistrada, type Visibles } from '../aplicacion/fuentes';
 import { zonaDelUsuario } from '../aplicacion/comun';
 import { ErrorDeCalendario, type CampoDeEvento } from '../dominio/errores';
 import type { ElementoVisible, Rango } from '../dominio/visible';
@@ -139,16 +139,22 @@ export type EstadoDeVisibles =
 export function useVisibles(ctx: ContextoDeModulo, rango: Rango): EstadoDeVisibles {
   const [version, setVersion] = useState(0);
   const [lectura, setLectura] = useState<Lectura | null>(null);
+  const [registradas, setRegistradas] = useState<LecturaRegistrada | null>(null);
   const [error, setError] = useState<unknown>(null);
   const reintentar = () => setVersion((v) => v + 1);
 
-  useEffect(() => ctx.almacen.alCambiar(ALMACENES_DE_FUENTES, reintentar), [ctx.almacen]);
+  // Cambios en lo propio y en las fuentes de otros módulos.
+  useEffect(() => {
+    const dejar = [ctx.almacen.alCambiar(ALMACENES_DE_FUENTES, reintentar), ...ctx.integraciones.fuentesDeCalendario().map((f) => f.fuente.alCambiar(reintentar))];
+    return () => dejar.forEach((d) => d());
+  }, [ctx.almacen, ctx.integraciones]);
+
   useEffect(() => {
     let vigente = true;
     leerFuentes(ctx.almacen)
       .then((l) => {
         if (!vigente) return;
-        // Si fallaron TODAS las fuentes, es un error de la pantalla; si no, se muestra lo que hay.
+        // Si fallaron TODAS las fuentes locales, es un error de la pantalla; si no, se muestra lo que hay.
         if (l.fallos.length === ALMACENES_DE_FUENTES.length) setError(l.fallos[0]!.error);
         else {
           setError(null);
@@ -161,13 +167,21 @@ export function useVisibles(ctx: ContextoDeModulo, rango: Rango): EstadoDeVisibl
     };
   }, [ctx.almacen, version]);
 
+  useEffect(() => {
+    let vigente = true;
+    void leerFuentesRegistradas(ctx.integraciones, rango, zonaDelUsuario()).then((r) => vigente && setRegistradas(r));
+    return () => {
+      vigente = false;
+    };
+  }, [ctx.integraciones, rango.desdeMs, rango.hastaMs, version]);
+
   const oculto = useOcultoPorDeshacer();
   const visibles = useMemo(() => {
-    if (!lectura) return null;
-    const v = visiblesEnRango(lectura, rango, zonaDelUsuario());
+    if (!lectura || !registradas) return null;
+    const v = combinar(visiblesEnRango(lectura, rango, zonaDelUsuario(), registradas.origenes), registradas);
     // Lo que se está eliminando (con "Deshacer" pendiente) no se muestra.
     return oculto ? { ...v, elementos: v.elementos.filter((x) => x.fuente !== 'propio' || x.eventoId !== oculto) } : v;
-  }, [lectura, rango.desdeMs, rango.hastaMs, oculto]);
+  }, [lectura, registradas, rango.desdeMs, rango.hastaMs, oculto]);
   if (error) return { estado: 'error', error, reintentar };
   if (!lectura || !visibles) return { estado: 'cargando' };
   return { estado: 'listo', visibles, hayEventosPropios: (lectura.registros.get('propios')?.length ?? 0) > 0, reintentar };
@@ -177,7 +191,7 @@ export function AvisoDeFuentes({ ctx, visibles, reintentar }: { ctx: ContextoDeM
   if (visibles.fallos.length === 0) return null;
   const fuentes = visibles.fallos
     .map((f) => {
-      const nombre = ctx.t(`calendario.fuente.${f.fuente}`);
+      const nombre = ctx.t(f.nombre);
       return f.omitidos > 0 ? ctx.t('calendario.fuenteOmitidos', { fuente: nombre, n: f.omitidos }) : nombre;
     })
     .join(', ');

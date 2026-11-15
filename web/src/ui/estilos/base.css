@@ -513,3 +513,36 @@ a {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ---- Universidad (clases pequeñas; el módulo no necesita hoja propia) ---- */
+
+.universidad-grupo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.universidad-grupo--vencido {
+  color: var(--color-peligro);
+}
+
+.universidad-subtareas {
+  display: grid;
+  gap: var(--espacio-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.universidad-progreso {
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--color-acento);
+}
+
+.universidad-nota {
+  max-width: 8rem;
+}
+
+.universidad-descripcion {
+  white-space: pre-wrap;
+}

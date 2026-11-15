@@ -1,9 +1,19 @@
-/**
- * Errores con nombre del negocio (guía §11). Cada uno trae la clave i18n del
- * mensaje para el usuario y, si aplica, el campo del formulario afectado.
- */
+/** Errores con nombre del negocio, con clave i18n y campo del formulario si aplica. */
 
-export type CampoDeFormulario = 'nombre' | 'color' | 'creditos' | 'materia' | 'titulo' | 'venceEn' | 'talla';
+export type CampoDeFormulario =
+  | 'nombre'
+  | 'profesor'
+  | 'periodo'
+  | 'color'
+  | 'creditos'
+  | 'materia'
+  | 'titulo'
+  | 'tipo'
+  | 'descripcion'
+  | 'venceEn'
+  | 'peso'
+  | 'nota'
+  | 'subtarea';
 
 export abstract class ErrorDeUniversidad extends Error {
   abstract readonly clave: string;
@@ -11,83 +21,65 @@ export abstract class ErrorDeUniversidad extends Error {
   readonly parametros?: Readonly<Record<string, string | number>>;
 }
 
-export class NombreDeMateriaInvalido extends ErrorDeUniversidad {
-  override name = 'NombreDeMateriaInvalido';
-  override readonly campo = 'nombre';
+function definir(nombre: string, clave: string, campo?: CampoDeFormulario) {
+  return class extends ErrorDeUniversidad {
+    override name = nombre;
+    readonly clave = clave;
+    override readonly campo = campo;
+  };
+}
+
+/** Texto vacío o demasiado largo en un campo. */
+export class TextoInvalido extends ErrorDeUniversidad {
+  override name = 'TextoInvalido';
   readonly clave: string;
+  override readonly campo: CampoDeFormulario;
   override readonly parametros: { max: number };
-  constructor(motivo: 'vacio' | 'largo', max: number) {
-    super(`Nombre de materia ${motivo === 'vacio' ? 'vacío' : `de más de ${max} caracteres`}`);
-    this.clave = `universidad.error.nombre.${motivo}`;
+  constructor(campo: CampoDeFormulario, motivo: 'vacio' | 'largo', max: number) {
+    super(`${campo}: ${motivo}`);
+    this.campo = campo;
+    this.clave = `universidad.error.${motivo}`;
     this.parametros = { max };
   }
 }
 
-export class ColorInvalido extends ErrorDeUniversidad {
-  override name = 'ColorInvalido';
-  override readonly campo = 'color';
-  readonly clave = 'universidad.error.color';
+export class NombreDeMateriaInvalido extends TextoInvalido {
+  constructor(motivo: 'vacio' | 'largo', max: number) {
+    super('nombre', motivo, max);
+  }
 }
-
-export class CreditosInvalidos extends ErrorDeUniversidad {
-  override name = 'CreditosInvalidos';
-  override readonly campo = 'creditos';
-  readonly clave = 'universidad.error.creditos';
+export class TituloInvalido extends TextoInvalido {
+  constructor(motivo: 'vacio' | 'largo', max: number) {
+    super('titulo', motivo, max);
+  }
 }
-
-export class MateriaRepetida extends ErrorDeUniversidad {
-  override name = 'MateriaRepetida';
-  override readonly campo = 'nombre';
-  readonly clave = 'universidad.error.materiaRepetida';
+export class PeriodoInvalido extends TextoInvalido {
+  constructor(motivo: 'vacio' | 'largo', max: number) {
+    super('periodo', motivo, max);
+  }
 }
-
-export class MateriaArchivadaSinEntregables extends ErrorDeUniversidad {
-  override name = 'MateriaArchivadaSinEntregables';
-  override readonly campo = 'materia';
-  readonly clave = 'universidad.error.materiaArchivada';
-}
-
-export class MateriaNoEncontrada extends ErrorDeUniversidad {
-  override name = 'MateriaNoEncontrada';
-  override readonly campo = 'materia';
-  readonly clave = 'universidad.error.materiaNoEncontrada';
-}
-
-export class EntregableNoEncontrado extends ErrorDeUniversidad {
-  override name = 'EntregableNoEncontrado';
-  readonly clave = 'universidad.error.entregableNoEncontrado';
-}
-
-export class TituloInvalido extends ErrorDeUniversidad {
-  override name = 'TituloInvalido';
-  override readonly campo = 'titulo';
+export class SubtareaInvalida extends ErrorDeUniversidad {
+  override name = 'SubtareaInvalida';
+  override readonly campo = 'subtarea';
   readonly clave: string;
   override readonly parametros: { max: number };
-  constructor(motivo: 'vacio' | 'largo', max: number) {
-    super(`Título ${motivo === 'vacio' ? 'vacío' : `de más de ${max} caracteres`}`);
-    this.clave = `universidad.error.titulo.${motivo}`;
+  constructor(motivo: 'vacia' | 'larga' | 'demasiadas' | 'noExiste', max = 0) {
+    super(`Subtarea ${motivo}`);
+    this.clave = `universidad.error.subtarea.${motivo}`;
     this.parametros = { max };
   }
 }
 
-export class FechaInvalida extends ErrorDeUniversidad {
-  override name = 'FechaInvalida';
-  override readonly campo = 'venceEn';
-  readonly clave = 'universidad.error.fecha';
-}
-
-export class TallaBloqueada extends ErrorDeUniversidad {
-  override name = 'TallaBloqueada';
-  override readonly campo = 'talla';
-  readonly clave = 'universidad.error.tallaBloqueada';
-}
-
-export class EntregableYaCompletado extends ErrorDeUniversidad {
-  override name = 'EntregableYaCompletado';
-  readonly clave = 'universidad.error.yaCompletado';
-}
-
-export class TransicionInvalida extends ErrorDeUniversidad {
-  override name = 'TransicionInvalida';
-  readonly clave = 'universidad.error.transicion';
-}
+export class ColorInvalido extends definir('ColorInvalido', 'universidad.error.color', 'color') {}
+export class CreditosInvalidos extends definir('CreditosInvalidos', 'universidad.error.creditos', 'creditos') {}
+export class MateriaRepetida extends definir('MateriaRepetida', 'universidad.error.materiaRepetida', 'nombre') {}
+export class MateriaArchivadaSinTrabajos extends definir('MateriaArchivadaSinTrabajos', 'universidad.error.materiaArchivada', 'materia') {}
+export class MateriaNoEncontrada extends definir('MateriaNoEncontrada', 'universidad.error.materiaNoEncontrada', 'materia') {}
+export class TrabajoNoEncontrado extends definir('TrabajoNoEncontrado', 'universidad.error.trabajoNoEncontrado') {}
+export class FechaInvalida extends definir('FechaInvalida', 'universidad.error.fecha', 'venceEn') {}
+export class NotaInvalida extends definir('NotaInvalida', 'universidad.error.nota', 'nota') {}
+export class PesoInvalido extends definir('PesoInvalido', 'universidad.error.peso', 'peso') {}
+export class TipoBloqueado extends definir('TipoBloqueado', 'universidad.error.tipoBloqueado', 'tipo') {}
+export class EstadoNoPermite extends definir('EstadoNoPermite', 'universidad.error.estado') {}
+/** Compatibilidad con el nombre anterior (iteración 1). */
+export const TransicionInvalida = EstadoNoPermite;

@@ -7,6 +7,8 @@ import type { AlmacenDeModulo, ContextoDeModulo, Notificador } from '../../../nu
 import { definirModulo } from '../../../nucleo/contrato';
 import { crearFormatos, crearTraductor } from '../../../nucleo/i18n/traductor';
 import { crearEntorno, type Entorno } from '../../../pruebas/entorno';
+import { integracionesVacias } from '../../../nucleo/aplicacion/integraciones';
+import type { Integraciones } from '../../../nucleo/contrato';
 import rpg from '../../rpg/modulo';
 import { leerPerfil } from '../../rpg/aplicacion/registrar-experiencia';
 import type { DatosDeEvento, EventoDeCalendario } from '../dominio/evento';
@@ -24,7 +26,7 @@ import {
   marcarCumplido,
   restaurarOcurrencia,
 } from './eventos';
-import { leerFuentes, visiblesEnRango, type IdDeFuente } from './fuentes';
+import { combinar, leerFuentes, leerFuentesRegistradas, visiblesEnRango, type IdDeFuente } from './fuentes';
 import { generarIcs, importarEventos, leerParaExportar, prepararImportacion } from './importar-exportar';
 import { descartarAvisos, leerBandeja, revisarRecordatorios } from './recordatorios';
 import { planificarSemana } from './revision-semanal';
@@ -59,6 +61,7 @@ async function preparar() {
     formatos: crearFormatos(),
     diagnostico: e.diagnostico,
     notificaciones,
+    integraciones: integracionesVacias,
     navegar: () => undefined,
   });
   for (const m of [calendario, rpg]) for (const s of m.suscripciones!(contexto(m.id))) e.bus.registrar(m.id, s);
@@ -139,13 +142,41 @@ describe('CA2 · elementos de otros módulos', () => {
     const roto: AlmacenDeModulo = { ...ctx.almacen, leer: (almacenes, fn) => (almacenes.includes(AGENDA) ? Promise.reject(new Error('IndexedDB')) : ctx.almacen.leer(almacenes, fn)) };
     const conFallo = visiblesEnRango(await leerFuentes(roto), rango, zonaDelUsuario());
     expect(conFallo.elementos.map((x) => x.titulo)).toEqual(['Monitoría']);
-    expect(conFallo.fallos).toMatchObject([{ fuente: 'externos' }]);
+    expect(conFallo.fallos).toMatchObject([{ fuente: 'externos', nombre: 'calendario.fuente.externos' }]);
 
     // Un registro dañado se omite y se cuenta.
     const lectura = await leerFuentes(ctx.almacen);
     const dañada = { ...lectura, registros: new Map<IdDeFuente, readonly unknown[]>([...lectura.registros, ['propios', [...lectura.registros.get('propios')!, { basura: true }]]]) };
     const parcial = visiblesEnRango(dañada, rango, zonaDelUsuario());
-    expect(parcial.fallos).toEqual([{ fuente: 'propios', omitidos: 1 }]);
+    expect(parcial.fallos).toEqual([{ fuente: 'propios', nombre: 'calendario.fuente.propios', omitidos: 1 }]);
+  });
+});
+
+describe('Fuentes registradas por otros módulos (ADR-0013)', () => {
+  it('se suman a lo propio; una que falla se informa sola; la proyección del mismo módulo no se duplica', async () => {
+    const { ctx, publicarAgenda } = await preparar();
+    await crearEvento(ctx, datos());
+    // El módulo "otro" publicó por eventos (proyección) Y además registra una fuente: debe verse una sola vez.
+    await publicarAgenda({ id: 'e1', titulo: 'Taller (copia vieja)', inicio: '2026-11-17T20:00:00Z', tipo: 'vencimiento', estado: 'pendiente' });
+    await new Promise((r) => setTimeout(r, 0));
+    const fuente = (id: string, elementos: () => Promise<unknown[]>) => ({ id, nombre: `${id}.nombre`, elementos, alCambiar: () => () => undefined }) as never;
+    const integraciones: Integraciones = {
+      ...integracionesVacias,
+      fuentesDeCalendario: () => [
+        { modulo: 'otro', fuente: fuente('otro.entregas', async () => [{ id: 'e1', titulo: 'Taller 3', inicio: '2026-11-17T20:00:00Z', tipo: 'vencimiento', estado: 'pendiente', ruta: '/otro/e1' }, { id: 'malo', titulo: 'x', inicio: 'ayer', tipo: 'vencimiento', estado: 'pendiente' }]) },
+        { modulo: 'roto', fuente: fuente('roto.cosas', async () => Promise.reject(new Error('caído'))) },
+      ],
+    };
+    const rango = { desdeMs: Date.parse('2026-11-16T05:00:00Z'), hastaMs: Date.parse('2026-11-23T05:00:00Z') };
+    const zona = zonaDelUsuario();
+    const registradas = await leerFuentesRegistradas(integraciones, rango, zona);
+    const v = combinar(visiblesEnRango(await leerFuentes(ctx.almacen), rango, zona, registradas.origenes), registradas);
+    expect(v.elementos.map((x) => x.titulo)).toEqual(['Monitoría', 'Taller 3']);
+    expect(v.elementos[1]).toMatchObject({ fuente: 'externo', origen: 'otro', ruta: '/otro/e1' });
+    expect(v.fallos).toMatchObject([
+      { fuente: 'otro.entregas', omitidos: 1 },
+      { fuente: 'roto.cosas', nombre: 'roto.cosas.nombre' },
+    ]);
   });
 });
 

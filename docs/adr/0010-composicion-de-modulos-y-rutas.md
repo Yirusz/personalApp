@@ -1,6 +1,6 @@
 # ADR-0010: Composición de módulos y enrutamiento
 
-Estado: aceptado
+Estado: aceptado · lectura de datos de otros módulos modificada por ADR-0013
 Fecha: 2026-11-14
 
 ## Contexto

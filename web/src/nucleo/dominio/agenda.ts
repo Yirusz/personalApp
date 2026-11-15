@@ -31,4 +31,6 @@ export interface ElementoDeAgenda {
   estado: EstadoDeElementoDeAgenda;
   /** Token de color (no hex). */
   color?: ColorCategorico;
+  /** Ruta interna para abrir el elemento en su módulo (p. ej. `/universidad/trabajos/<id>`). */
+  ruta?: string;
 }
