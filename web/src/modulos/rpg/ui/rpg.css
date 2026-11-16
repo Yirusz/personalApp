@@ -1,0 +1,94 @@
+/* Progreso (RPG). Mobile-first; tokens del shell. */
+.rpg-cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-4);
+}
+
+.rpg-racha {
+  margin-block-end: 0;
+}
+
+.barra-progreso--fina {
+  height: 0.5rem;
+}
+
+.rpg-atributos,
+.rpg-logros {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-atributos__fila {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-block-end: var(--espacio-1);
+}
+
+.rpg-logro {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: flex-start;
+}
+
+.rpg-logro:not(.rpg-logro--si) strong {
+  color: var(--color-texto-tenue);
+}
+
+.rpg-logro__icono {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.rpg-recompensa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+}
+
+.rpg-recompensa__texto {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rpg-recompensa__acciones {
+  flex-wrap: wrap;
+}
+
+.rpg-formulario {
+  display: grid;
+  gap: var(--espacio-3);
+  margin-block-start: var(--espacio-3);
+}
+
+.rpg-nueva {
+  margin-block: var(--espacio-3);
+}
+
+.rpg-anulado {
+  text-decoration: line-through;
+}
+
+@media (min-width: 720px) {
+  .rpg-atributos,
+  .rpg-logros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Sin oro suficiente: que se note sin depender solo del color (el texto "Te faltan…" lo explica). */
+.rpg-recompensa .boton:disabled {
+  opacity: 1;
+  border-style: dashed;
+  border-color: var(--color-borde);
+  background: transparent;
+  color: var(--color-texto-tenue);
+}

@@ -42,7 +42,7 @@ describe('reglas v1', () => {
     } catch (e) {
       expect((e as Error).message).toMatch(/evento inválido/);
       expect((e as Error).message).toMatch(/atributo desconocido: fuerza/);
-      expect((e as Error).message).toMatch(/exactamente uno de xp, xpPorTalla o xpPorValor/);
+      expect((e as Error).message).toMatch(/exactamente uno de xp, xpPorTalla, xpPorValor o xpDesdeDato/);
     }
   });
 

@@ -90,5 +90,8 @@
   "estudio.tipo.universidad.trabajo": "Trabajos pendientes",
   "estudio.reloj": "Temporizador",
   "estudio.progreso": "{n} % de {fase}",
-  "estudio.acciones": "Acciones del temporizador"
+  "estudio.acciones": "Acciones del temporizador",
+  "estudio.evento.PomodoroCompletado": "Pomodoro completado",
+  "estudio.evento.PomodoroInterrumpido": "Pomodoro detenido",
+  "estudio.evento.DescansoCompletado": "Descanso completado"
 }

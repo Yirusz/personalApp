@@ -4,6 +4,22 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado
 
 ## [Sin publicar]
 
+## [0.7.0] — 2026-11-16 · Iteración 6: RPG v1 completo
+
+### Agregado
+- **Racha semanal:** una semana (lunes a domingo, Bogotá) se cumple con 4 días activos. Da +50 XP y multiplica la XP (+5 % por semana, hasta +30 %). Cada 4 semanas cumplidas ganas un comodín (máx. 2) que salva una semana floja. Perder la racha no quita XP. Se evalúa al abrir la app y al llegar eventos, semana por semana, sin temporizadores; el cierre es el lunes 00:00 sin gracia (ADR-0017).
+- **Logros** definidos en configuración: Primer foco, Semestre en marcha, Puntual, Constancia y Maratón sano. Se desbloquean una sola vez y dan XP de Disciplina.
+- **Niveles por atributo** (Intelecto, Disciplina, Organización, Bienestar) con su barra.
+- **Recompensas propias:** crear, editar, archivar y restaurar; canjear con oro (nunca queda negativo) y deshacer durante 10 s.
+- **Avisos** de nivel, atributo y logros, agrupados en uno: arriba de la pantalla, 5 s o Escape, anunciados por lector de pantalla y sin animación si el sistema lo pide.
+- **Historial legible:** "Pomodoro completado", "Trabajo entregado"… (cada módulo declara la etiqueta de sus eventos).
+- Progreso en Inicio muestra la racha y los días activos de la semana.
+- Núcleo: `ctx.avisos` y `t.existe`.
+
+### Cambiado
+- Pomodoros: el tope provisional de 80 XP se reemplaza por tramos diarios (8 × 10 XP, luego 5 XP hasta el 12.º, luego 0 con la nota "tramo reducido").
+- RPG: migración v3 (contadores por día, semanas, logros, recompensas y avisos). Al actualizar, los contadores se rellenan una vez desde el libro y se desbloquean los logros que el historial ya cumple.
+
 ## [0.6.0] — 2026-11-15 · Iteración 5: Estudio (Pomodoro)
 
 ### Agregado

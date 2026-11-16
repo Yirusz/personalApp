@@ -24,14 +24,14 @@
 
 Dispositivos del usuario: Windows y Linux (Zen, Chrome), Galaxy Tab S10 FE y Galaxy A56 (Chrome). Zona `America/Bogota`.
 
-## 2. Qué existe ya (fase 1 + iteraciones 1 a 5)
+## 2. Qué existe ya (fase 1 + iteraciones 1 a 6)
 
 - **Núcleo** (`web/src/nucleo`): contrato de módulo, registro con validación, `AlmacenIndexedDb` (migraciones por módulo, aislamiento, transacciones todo-o-nada), `BusDeEventos` (bandeja + cursores, pausa por fallo, reanudar), UUIDv7 monótono, `Reloj`, i18n es-CO + `Intl` en Bogotá, respaldo JSON atómico, diagnóstico local persistido.
 - **Shell** (`web/src/ui`): barra inferior < 720 px / riel lateral ≥ 720 px, "Más" si hay > 5 entradas, tema sistema/claro/oscuro con `light-dark()`, Inicio con tarjetas de módulos, Ajustes (tema, persistencia, exportar/importar), Diagnóstico.
 - **PWA:** manifest, íconos (incl. maskable), Service Worker propio (precaché, sin red, actualización a pedido), CSP estricta en producción.
 - **Módulos:** `ejemplo` (recorre el contrato; se puede borrar) y `rpg` (libro de experiencia, perfil, nivel, reglas `xp`/`xpPorTalla`/`limiteDiarioXp`, tarjeta de Inicio y pantalla Progreso).
 - **Universidad v2** (`web/src/modulos/universidad`, iteraciones 1 y 3): materias con profesor, periodo, color y créditos editables (nombre único por periodo; archivar con deshacer); **trabajos** (tarea, taller, quiz, parcial, proyecto, exposición) con fecha y hora, prioridad, peso % opcional, descripción y **subtareas**; estados pendiente → en progreso → entregado → calificado o cancelado, reabrir deliberado; fecha real de entrega y "a tiempo"; nota 0,0–5,0. "Próximas entregas" (vencido / hoy / próximos 7 días / más adelante) con filtros persistentes. 13 eventos `Trabajo*`/`Materia*` (subtareas sin eventos). **Proveedores**: fuente de calendario `universidad.entregas` y referencias `universidad.materia`/`universidad.trabajo`. Migración v2 desde los datos de la iteración 1.
-- **RPG** (adelantado de R1): `unaVezPor`, `minMinutosDesdeCreacion`, `minAntelacionHoras`, `multiplicadorPuntual` (función pura `calcularXp`; migración v2). Iteración 3: `xpPorValor` y `bonoPorUmbral` genéricos (ADR-0014). Faltan `tramosDiarios`, racha, logros y recompensas.
+- **RPG** (adelantado de R1): `unaVezPor`, `minMinutosDesdeCreacion`, `minAntelacionHoras`, `multiplicadorPuntual` (función pura `calcularXp`; migración v2). Iteración 3: `xpPorValor` y `bonoPorUmbral` genéricos (ADR-0014). **Iteración 6 (RPG v1 completo, 0.7.0):** tramos diarios; racha semanal por semanas cerradas con comodines, determinista y sin temporizadores (ADR-0017); logros y contadores en configuración; niveles por atributo; recompensas propias con canje y deshacer; avisos agrupados del shell; historial con nombres legibles; migración v3 con relleno desde el libro.
 - **Calendario** (`web/src/modulos/calendario`, iteración 2): eventos propios (todo el día como fecha), series con excepciones por ocurrencia, vistas agenda/día/semana/mes (mes accesible con teclado), elementos de otros módulos de solo lectura (fuentes registradas consultadas por rango desde la iteración 3, y proyección `calendario.agenda` para módulos que solo publican eventos; tolerante a datos malos y fuentes que fallan), recordatorios (tarea `alIniciar` + bandeja en Inicio), .ics propio (ADR-0012), bloque de compromiso (XP) y revisión semanal (XP). Iteración 4: cabecera compacta y "+" flotante, semana de 7 columnas en 360 px, crear tocando (media hora) o arrastrando, línea de ahora viva, **panel de fichas** (tocar/arrastrar para poner, tocar para quitar, con deshacer), fichas propias, "Usar una ficha" y "Vincular a" en el formulario, color libre. 10 eventos `calendario.*`. Migración v2.
 - **Estudio** (`web/src/modulos/estudio`, iteración 5):
   - Pomodoro con fases y ciclo; pausar, reanudar, detener (no cuenta) y saltar descanso.
@@ -40,12 +40,12 @@ Dispositivos del usuario: Windows y Linux (Zen, Chrome), Galaxy Tab S10 FE y Gal
   - Aviso con la app visible: tono Web Audio, vibración y notificación; pantalla encendida opcional; tiempo restante en el título.
   - Estadísticas de hoy y la semana con barras propias.
   - Fuente de calendario `estudio.sesiones` y ficha "Bloque de estudio". Migración v1.
-- **Compartido** (ver `docs/arquitectura.md` §4): `ElementoDeAgenda` + colores por token en el núcleo; `formatos.entradaLocal/desdeEntradaLocal/relativo`; barra "Deshacer" del shell (`ui/deshacer.tsx`); utilidades CSS de formularios y listas. Iteración 2: `nucleo/dominio/zona-horaria.ts`, `alIniciar` en el contrato, puerto `ctx.notificaciones`, `navegar(ruta, { reemplazar })`. Iteración 3: `proveedores` + `ctx.integraciones` (ADR-0013). Iteración 4: `nucleo/dominio/{color,fichas}.ts`, `integraciones.fichas()`, `ui/color.ts` (ADR-0015). Iteración 5: `tx.publicar(…, { ocurridoEn })` (ADR-0016).
-- **Calidad:** 225 pruebas (Vitest + fake-indexeddb), prueba de arquitectura, `npm run check`, CI Windows + Linux, despliegue a GitHub Pages. Recorrido de UI en Chrome a 360/768/1280 px, teclado, tema oscuro y sin conexión en cada iteración. JS inicial 33,7 KB gzip.
+- **Compartido** (ver `docs/arquitectura.md` §4): `ElementoDeAgenda` + colores por token en el núcleo; `formatos.entradaLocal/desdeEntradaLocal/relativo`; barra "Deshacer" del shell (`ui/deshacer.tsx`); utilidades CSS de formularios y listas. Iteración 2: `nucleo/dominio/zona-horaria.ts`, `alIniciar` en el contrato, puerto `ctx.notificaciones`, `navegar(ruta, { reemplazar })`. Iteración 3: `proveedores` + `ctx.integraciones` (ADR-0013). Iteración 4: `nucleo/dominio/{color,fichas}.ts`, `integraciones.fichas()`, `ui/color.ts` (ADR-0015). Iteración 5: `tx.publicar(…, { ocurridoEn })` (ADR-0016). Iteración 6: `ctx.avisos` (`ui/avisos.tsx`) y `t.existe` (ADR-0017).
+- **Calidad:** 248 pruebas (Vitest + fake-indexeddb), prueba de arquitectura, `npm run check`, CI Windows + Linux, despliegue a GitHub Pages. Recorrido de UI en Chrome a 360/768/1280 px, teclado, tema oscuro y sin conexión en cada iteración. JS inicial 33,7 KB gzip.
 
 ## 3. Backlog por iteraciones
 
-Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46 puntos en una sola entrega por decisión del usuario (ADR-0011); iteración 3 = ~21 puntos (U7–U12 + integración); iteración 4 = ~23 puntos (H1, H7a/b, H8a/b, H9) + correcciones 0.5.1; iteración 5 = 15 puntos + ~2 (fuente y ficha de Estudio). Para planear se mantiene ~15–20 por iteración; la 2 fue excepcional. Historias completas con criterios en `docs/story-map.md`.
+Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46 puntos en una sola entrega por decisión del usuario (ADR-0011); iteración 3 = ~21 puntos (U7–U12 + integración); iteración 4 = ~23 puntos (H1, H7a/b, H8a/b, H9) + correcciones 0.5.1; iteración 5 = 15 puntos + ~2 (fuente y ficha de Estudio); iteración 6 = 17 puntos (R1–R5 + R6 adelantada). Para planear se mantiene ~15–20 por iteración; la 2 fue excepcional. Historias completas con criterios en `docs/story-map.md`.
 
 | Iteración | Objetivo | Historias | Pts |
 |---|---|---|---|
@@ -54,19 +54,19 @@ Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46
 | ~~3~~ ✅ | ~~Revisión de Universidad~~ | U7–U12 + proveedores (0.4.0; ver story-map) | ~21 |
 | ~~4~~ ✅ | ~~Revisión del Calendario~~ | H1, H7a/b, H8a/b, H9 (0.5.0; ver story-map) | ~23 |
 | ~~5~~ ✅ | ~~Estudio~~ | E1–E5 + fuente y ficha en el calendario (0.6.0) | 17 |
-| **6** | **RPG v1 completo** | R1 Tramos diarios de Pomodoro + nombres legibles en el historial (2; el resto de R1 se hizo en las iteraciones 1 y 3) · R2 Racha + comodines (5) · R3 Logros (3) · R4 Recompensas y canje (3) · R5 Avisos de nivel/logro (2) | 15 |
-| 7 | Endurecer y lanzar 1.0.0 | E2E con Playwright en 360/768/1280 · checklist de `plataformas.md` en los 6 entornos · Lighthouse en A56 · recordatorio de respaldo (> 7 días) · borrar módulo `ejemplo` · CHANGELOG 1.0.0 | — |
+| ~~6~~ ✅ | ~~RPG v1 completo~~ | R1–R5 + R6 niveles de atributo (0.7.0; ver story-map) | 17 |
+| **7** | **Endurecer y lanzar 1.0.0** | E2E con Playwright en 360/768/1280 · checklist de `plataformas.md` en los 6 entornos · Lighthouse en A56 · recordatorio de respaldo (> 7 días) · borrar módulo `ejemplo` · CHANGELOG 1.0.0 | — |
 | 8 | Notas | N1 Nota Markdown · N2 Etiquetas · N3 Búsqueda · N4 Vínculos a materia/trabajo (con `buscarReferencias`, ya disponible) | ~18 |
 | ~~—~~ | ~~Calendario+~~ | Absorbida por la iteración 2 (ADR-0011) | — |
 | 9 | Obsidian (b) — **en pausa por decisión del usuario** | O1 Exportar/importar notas `.md` con frontmatter (ADR nuevo) | ~8 |
 | 10 | Sincronización | S1 Syncthing con registro de operaciones por dispositivo (ADR nuevo, reemplaza 0002) | ~13 |
 | — | Estilo pixel art | R7 Hoja de tokens `data-estilo="pixel"` + fuente OFL bajo demanda | ~5 |
 
-### Iteración 6 en detalle (propuesta)
-1. **R1 tramos diarios:** aplicar `tramosDiarios` en `calcularXp` contando los asientos del día por el índice tipo+día (como `limiteDiarioXp`); nota "tramo reducido" en Progreso. Después, **quitar el tope provisional de 80** de `estudio.PomodoroCompletado` (nunca se edita una migración, pero la configuración sí). Nombres legibles en el historial ("Pomodoro completado" en vez de `estudio.PomodoroCompletado`).
-2. **R2 racha semanal + comodines** por día de `ocurridoEn` (ADR-0016), con proyección propia del RPG.
-3. **R3 logros**, **R4 recompensas y canje con oro**, **R5 avisos de nivel/logro** (reutilizar la barra del shell o `ctx.notificaciones`).
-4. Recalcular la XP histórica con reglas nuevas: el registro de eventos se conserva (ADR-0005/0009); definir si se recalcula o solo aplica hacia adelante (ADR si cambia).
+### Iteración 7 en detalle (propuesta)
+1. **E2E con Playwright** (los guiones de recorrido de las iteraciones 3–6 como base) en 360/768/1280, incluida la racha con reloj falso.
+2. **Checklist de `plataformas.md`** en los 6 entornos (Windows/Linux con Chrome/Zen, A56, Tab S10 FE) y Lighthouse en el A56.
+3. **Respaldo:** recordatorio si pasan > 7 días sin exportar; importar respaldos de versiones anteriores aplicando migraciones en una base temporal.
+4. Borrar el módulo `ejemplo`; CHANGELOG 1.0.0. R8 "Recalcular XP" queda en el backlog (decisión del usuario).
 
 ## 4. Definición de Ready / Done
 - **Ready:** valor claro, criterios Gherkin (incluido sin conexión), dependencias conocidas, plataformas indicadas, ≤ 8 puntos.
@@ -86,7 +86,10 @@ Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46
 | "Vencido" y los tiempos relativos no se refrescan solos con la pantalla abierta | Texto desactualizado hasta navegar o cambiar datos | Agregar un tic por minuto si molesta en el uso real |
 | Guardar en la ficha del trabajo = 2 transacciones (editar + reprogramar) | Si la 2.ª falla, la 1.ª queda guardada | Se valida todo antes; riesgo bajo. Un caso de uso "actualizar" si llega a importar |
 | Universidad lee todos sus trabajos en memoria para la lista | Lento con miles | Hay índices `por_materia`, `por_estado` y `por_vencimiento`; la fuente de calendario ya consulta por rango |
-| El historial de Progreso muestra tipos técnicos (`universidad.TrabajoEntregado`) | UX | Nombres legibles en R1 (iteración 6) |
+| Racha sin gracia: un Pomodoro del domingo detectado el lunes no cuenta para la racha | Puede costar una semana si Android congeló la app al final del domingo | Decisión del usuario (ADR-0017); los comodines amortiguan. Revisar con el uso |
+| Contadores con filtro por datos (logro Puntual) empiezan en 0 al actualizar a la 0.7 | Logro más lejano para quien ya entregó trabajos | Documentado; R8 Recalcular XP lo corrige desde el registro de eventos |
+| Las reglas nuevas solo aplican hacia adelante (sin Recalcular) | XP histórica con reglas viejas | R8 en el backlog (decisión del usuario) |
+| Avisos pendientes se acumulan en el almacén `avisos` | Crece muy poco (uno por nivel/logro) | Limpiar los mostrados hace > 30 días si hiciera falta |
 | Consultas a proveedores en cada render del rango (ADR-0013) | Una fuente lenta retrasa el calendario | Cada fuente es independiente (allSettled); cachear por rango si alguna llega a ser lenta |
 | Referencias guardadas por otros módulos pueden apuntar a trabajos borrados | Vínculo roto en Estudio/Notas | El consumidor resuelve por `ids` y muestra "no disponible" si falta |
 | Reabrir borra la nota y la fecha de entrega | Se pierde la nota anterior | Es deliberado (lo pidió la historia) y el aviso lo dice; queda en el registro de eventos |
@@ -97,7 +100,6 @@ Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46
 | En 360 px con el panel de fichas abierto la cuadrícula queda más abajo | Hay que desplazar | El panel se cierra con "Fichas" y recuerda el estado |
 | Datos de la iteración 1: tipo `trabajo` → taller, `otro` → tarea; periodo deducido de la fecha de creación | Clasificación aproximada | Editable en la ficha (el tipo solo mientras no esté entregado) |
 | Pomodoro: sin aviso con la app cerrada o la pantalla bloqueada (ADR-0004) | Se "pierde" el final | La UI lo dice; al volver se ve la hora exacta; pantalla encendida opcional |
-| Tope provisional de 80 XP/día en Pomodoro | Configuración temporal | Se reemplaza por los tramos en la iteración 6 |
 | Pausas del Pomodoro sin límite | Un foco pausado horas sigue "en curso" | Evaluar con el uso; "Detener" lo resuelve |
 | `ocurridoEn` hacia atrás podría esquivar topes diarios | Bajo (módulos propios) | Validación "nunca futuro"; revisar si se abren módulos de terceros |
 | Recordatorios solo con Ludus abierto; en Android, solo en primer plano | Avisos perdidos | La UI lo dice; bandeja al abrir; exportar .ics al calendario del teléfono para alarmas reales (ADR-0004 sin cambios) |

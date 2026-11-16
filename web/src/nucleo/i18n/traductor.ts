@@ -6,7 +6,10 @@
 import { crearZona, esFechaCivil } from '../dominio/zona-horaria';
 
 export type Parametros = Readonly<Record<string, string | number>>;
-export type Traductor = (clave: string, parametros?: Parametros) => string;
+export type Traductor = ((clave: string, parametros?: Parametros) => string) & {
+  /** Si la clave existe (sin registrarla como faltante). Opcional para no obligar a los dobles de prueba. */
+  existe?: (clave: string) => boolean;
+};
 
 export const LOCALE = 'es-CO';
 export const ZONA_HORARIA = 'America/Bogota';
@@ -21,7 +24,7 @@ export function crearTraductor(
   alFaltar?: (clave: string) => void,
 ): Traductor {
   const plurales = new Intl.PluralRules(LOCALE);
-  return (clave, parametros) => {
+  const t: Traductor = (clave, parametros) => {
     let plantilla = diccionario[clave];
     if (plantilla === undefined && typeof parametros?.n === 'number') {
       const forma = plurales.select(parametros.n) === 'one' ? 'uno' : 'otro';
@@ -38,6 +41,8 @@ export function crearTraductor(
       return typeof valor === 'number' ? new Intl.NumberFormat(LOCALE).format(valor) : valor;
     });
   };
+  t.existe = (clave) => diccionario[clave] !== undefined || diccionario[`${clave}.otro`] !== undefined;
+  return t;
 }
 
 export interface Formatos {

@@ -2,6 +2,7 @@
  * Casos de uso de Estudio contra IndexedDB en memoria, con reloj falso (E1, E2, E5).
  * Todo es local: los escenarios "sin conexión" se cumplen porque nada usa la red.
  */
+import { avisadorNulo } from '../../../nucleo/infraestructura/avisos';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContextoDeModulo } from '../../../nucleo/contrato';
 import { integracionesVacias } from '../../../nucleo/aplicacion/integraciones';
@@ -195,6 +196,7 @@ describe('alIniciar: temporizador y aviso (E3)', () => {
         diagnostico: e.diagnostico,
         notificaciones: { permiso: () => 'concedido', pedirPermiso: async () => 'concedido', mostrar },
         integraciones: integracionesVacias,
+        avisos: avisadorNulo,
         navegar: () => undefined,
       } as unknown as ContextoDeModulo;
       await iniciarFase(ctx, { vinculo: null });

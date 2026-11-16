@@ -333,9 +333,11 @@ classDiagram
 | Value objects | `Nivel` (derivado de la XP con la fórmula), `Atributo` (intelecto, disciplina, organización, bienestar), `DiaLocal` (`AAAA-MM-DD` en Bogotá), `SemanaIso` |
 | Servicios de dominio | `CalculadoraDeExperiencia` (aplica reglas: base o talla, puntualidad, tramos, límites, "una vez por", multiplicador de racha), `EvaluadorDeRacha` |
 | Invariantes | La XP **nunca disminuye**. `xpTotal = Σ asientos.xp`. Un evento produce como máximo un asiento (idempotencia). Oro disponible = ⌊xpTotal / 10⌋ − oroGastado ≥ 0: no se canjea sin oro suficiente. Comodines 0–2. Un logro se desbloquea una sola vez. |
-| Eventos | `rpg.NivelAlcanzado {nivel, nivelAnterior}` · `SemanaDeRachaCumplida {semana, rachaSemanas}` · `RachaPerdida {semana}` · `ComodinUsado {semana}` · `LogroDesbloqueado {logroId}` · `RecompensaCreada {recompensaId}` · `RecompensaCanjeada {canjeId, recompensaId, costoOro}` · `CanjeDeshecho {canjeId}` |
+| Eventos | `rpg.NivelAlcanzado {nivel, nivelAnterior}` · `NivelDeAtributoAlcanzado {atributo, nivel}` · `SemanaDeRachaCumplida {semana, racha}` · `ComodinGanado {semana, comodines}` · `ComodinUsado {semana, comodines}` · `RachaPerdida {semana, semanasAntes}` · `SemanasCerradas {hasta}` (pide la evaluación al abrir) · `LogroDesbloqueado {logroId, xp}` · `RecompensaCanjeada {recompensaId, nombre, costo}` (el id del evento es el id del canje) · `CanjeAnulado {canjeId, costo}` |
 
 Implementado en la fundación: `AsientoDeExperiencia`, `Perfil`, fórmula de nivel y `rpg.NivelAlcanzado`; reglas `xp`, `xpPorTalla` y `limiteDiarioXp`. Iteración 1: `unaVezPor` (índice `por_clave_unica`, migración v2 del RPG), `minMinutosDesdeCreacion`, `minAntelacionHoras` y `multiplicadorPuntual`, en la función pura `calcularXp`.
+
+Iteración 6 (0.7.0): `tramosDiarios`, multiplicador de racha y `xpDesdeDato` en `calcularXp`; `dominio/racha.ts` (semanas ISO, cierre lunes 00:00, `evaluarSemana` con comodines), `dominio/logros.ts` (contadores y condiciones desde configuración), niveles de atributo. Migración v3: almacenes `dias` (cantidad y XP por tipo, contadores y actividad por día local), `semanas` (racha antes y después de cada semana), `contadores`, `logros`, `recompensas`, `avisos`. El canje es un asiento con `oro` en el libro; deshacer agrega otro con `oro` negativo y marca el primero `anulado`.
 
 ## 6. Contexto Notas (post-MVP, esbozo)
 

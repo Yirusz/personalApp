@@ -108,3 +108,16 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 10. **Estadísticas y calendario:** tras completar focos, Estudio muestra hoy, la semana por día y el reparto por materia. En el Calendario, vista día, aparece "Estudio: Cálculo II" como bloque hecho (solo lectura), y en la barra de fichas, "Estudio → Bloque de estudio".
 11. **Sin conexión:** modo avión, recargar Estudio e iniciar un foco: funciona igual.
 
+### Iteración 6 — Progreso / RPG (guion de prueba manual, ~15 min por entorno)
+1. **Vacío:** Progreso muestra Nivel 1, 0 de oro, "Racha de 0 semanas", "Esta semana: 0 de 4 días activos", los 4 atributos en nivel 1, "Aún no tienes recompensas", 5 logros bloqueados y "Aún no ha cerrado ninguna semana".
+2. **Aviso de logro:** completar el primer Pomodoro (foco de 5 min en Ajustes de Estudio). Arriba aparece "🏅 Logro: Primer foco"; se cierra solo a los 5 s o con Escape (escritorio). Con TalkBack (Android) se anuncia.
+3. **Movimiento reducido:** con "Quitar animaciones" (Android) o "Reducir movimiento" (Windows/Linux) el aviso aparece sin deslizarse.
+4. **Historial legible:** "Experiencia reciente" dice "Pomodoro completado", "Logro desbloqueado"… (no `estudio.PomodoroCompletado`).
+5. **Racha:** estudiar (un Pomodoro) 4 días distintos de una semana; el lunes siguiente, al abrir Ludus: "Semana cumplida", +50 XP de Disciplina con fecha del domingo y "Racha de 1 semana · ×1,05". Un taller a tiempo esa semana da 25 XP en vez de 24.
+6. **Sin gracia (opcional, Android):** iniciar un foco de 5 min el domingo a las 23:57 y bloquear la pantalla hasta pasada la medianoche: da su XP el domingo, pero no cuenta para la racha de esa semana.
+7. **Recompensas:** crear "Capítulo de serie" de 5 de oro; costo 0 → error en el campo y foco en él. Una recompensa más cara que el oro tiene "Canjear" desactivado (borde punteado) y "Te faltan N de oro".
+8. **Canje y deshacer:** canjear → baja el oro y aparece la barra "Deshacer"; deshacer → vuelve el oro y el historial muestra el canje tachado y "+5 de oro devuelto". Archivar → "Restaurar" en "Archivadas".
+9. **Atributos:** al pasar Intelecto de 100 XP sube a nivel 2 y el aviso lo dice (agrupado con un nivel o logro si coinciden).
+10. **Inicio:** la tarjeta de Progreso muestra nivel, oro, racha y días activos de la semana.
+11. **Sin conexión:** modo avión, recargar Progreso, canjear y deshacer: funciona igual.
+

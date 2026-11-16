@@ -626,42 +626,49 @@ Escenario: Cruzar la medianoche
   Entonces el foco figura terminado a las 23:50 y cuenta (estadísticas, XP, tope y racha) para ese día, no para el siguiente
 ```
 
-### RPG (18 pts)
+### RPG (iteración 6: 17 pts con R6; R1 en parte hecho en las iteraciones 1 y 3)
 
-#### R1 — Reglas v1 completas · 5 pts · todas
+#### R1 — Reglas v1 completas · 2 pts restantes · todas
 Como estudiante, quiero que la experiencia premie el esfuerzo real, para que el juego no se pueda "farmear".
 ```gherkin
-Escenario: Puntualidad
-  Cuando completo a tiempo un entregable talla M
-  Entonces gano 42 XP (35 × 1,2) de Disciplina
+Escenario: Puntualidad (XP por tipo, ADR-0014) ✅
+  Cuando entrego a tiempo un taller
+  Entonces gano 24 XP (20 × 1,2) de Disciplina
+  Y un parcial a tiempo que vale 25 % da 75 XP (50 × 1,2 × 1,25)
 
-Escenario: Completado demasiado rápido
-  Cuando completo un entregable 5 min después de crearlo
-  Entonces gano 0 XP y el historial dice "completado muy rápido"
+Escenario: Entregado demasiado rápido ✅
+  Cuando entrego un trabajo 5 min después de registrarlo
+  Entonces gano 0 XP y el historial dice "muy rápido"
 
-Escenario: Rendimiento decreciente
-  Dados 12 Pomodoros completados hoy
-  Entonces gané 8 × 10 + 4 × 5 = 100 XP de Intelecto, y el 13.º da 0
-
-Escenario: Planificación anticipada
-  Cuando registro un entregable 3 días antes de su fecha
+Escenario: Planificación anticipada ✅
+  Cuando registro un trabajo 3 días antes de su fecha
   Entonces gano 3 XP de Organización; si es con menos de 48 h, 0
+
+Escenario: Rendimiento decreciente (reemplaza el tope provisional de 80)
+  Dados 12 Pomodoros completados hoy (día de Bogotá según ocurridoEn, ADR-0016)
+  Entonces gané 8 × 10 + 4 × 5 = 100 XP de Intelecto, y el 13.º da 0 con la nota "tramo reducido"
+
+Escenario: Nombres legibles en el historial
+  Dado que Universidad declara en sus textos la etiqueta "Trabajo entregado" para universidad.TrabajoEntregado
+  Entonces el historial de Progreso muestra "Trabajo entregado"
+  Y un evento sin etiqueta declarada se muestra con su tipo técnico
 ```
 
 #### R2 — Racha semanal con comodines · 5 pts · todas
 Como estudiante, quiero una racha semanal flexible, para mantener la constancia sin miedo a perderlo todo.
 ```gherkin
 Escenario: Semana cumplida
-  Dado que estuve activo 4 de 7 días (lun–dom, hora de Bogotá)
-  Cuando empieza la semana siguiente
-  Entonces se publica rpg.SemanaDeRachaCumplida (+50 XP) y la racha sube a 1
+  Dado que estuve activo 4 de 7 días (lun–dom, hora de Bogotá) con Pomodoros o trabajos entregados
+  Cuando la semana ya cerró
+  Entonces se publica rpg.SemanaDeRachaCumplida (+50 XP, sin multiplicar) y la racha sube a 1
 
-Escenario: Multiplicador
-  Dada una racha de 3 semanas
-  Entonces la XP de los eventos se multiplica por 1,15 (tope 1,30)
+Escenario: Multiplicador del momento
+  Dada una racha de 3 semanas al empezar la semana
+  Entonces la XP de los eventos de esa semana se multiplica por 1,15 (tope 1,30)
+  Y un evento atrasado de una semana anterior usa la racha que regía en su semana
 
 Escenario: Comodín
-  Dada una racha de 5 semanas y 1 comodín
+  Dada una racha de 5 semanas y 1 comodín (se gana 1 cada 4 semanas cumplidas, máximo 2)
   Cuando una semana no cumplo
   Entonces se consume el comodín y la racha sigue
 
@@ -669,6 +676,24 @@ Escenario: Perder la racha
   Dada una racha sin comodines
   Cuando una semana no cumplo
   Entonces el multiplicador vuelve a 1, pero conservo toda mi XP, nivel y oro
+
+Escenario: Semanas sin abrir la app
+  Dado que no abrí Ludus en 3 semanas
+  Cuando lo abro
+  Entonces se evalúan las 3 semanas en orden, consumiendo comodines si los hay, sin temporizadores
+
+Escenario: Cierre sin gracia (decisión del usuario)
+  Dado un Pomodoro que terminó el domingo a las 23:50 pero se registró el lunes a las 00:10 (app congelada)
+  Entonces da su XP en el domingo, pero no cuenta para la racha de esa semana (la semana cerró el lunes 00:00)
+
+Escenario: Bordes del calendario
+  Dado un Pomodoro que terminó y se registró el domingo a las 23:59 (Bogotá)
+  Entonces cuenta para esa semana
+  Y la semana 53 de 2026 (28 dic – 3 ene) se evalúa como una semana normal
+
+Escenario: Determinista
+  Dado el mismo registro de eventos
+  Entonces la racha y su historial semana a semana dan siempre el mismo resultado
 ```
 
 #### R3 — Logros básicos · 3 pts · todas
@@ -676,28 +701,57 @@ Como estudiante, quiero desbloquear logros por hitos, para celebrar avances.
 ```gherkin
 Escenario: Primer Pomodoro
   Cuando completo mi primer Pomodoro
-  Entonces se desbloquea "Primer foco" y se publica rpg.LogroDesbloqueado
+  Entonces se desbloquea "Primer foco" (+10 XP) y se publica rpg.LogroDesbloqueado
+
+Escenario: Puntual
+  Cuando entrego a tiempo mi 10.º trabajo distinto (universidad.TrabajoEntregado con aTiempo)
+  Entonces se desbloquea "Puntual"; reabrir y volver a entregar el mismo trabajo no cuenta dos veces
 
 Escenario: Idempotencia
   Cuando vuelvo a cumplir la condición
   Entonces el logro no se repite
+
+Escenario: Definidos en configuración
+  Entonces los logros y sus condiciones (contadores totales, del día o de racha) están en reglas.v1.json, no en el código
+
+Escenario: Varios a la vez
+  Dado un historial que ya cumple varias condiciones
+  Cuando el RPG lo procesa por primera vez
+  Entonces se desbloquean todos y R5 los muestra en un solo aviso
 ```
 
 #### R4 — Recompensas propias y canje · 3 pts · todas
 Como estudiante, quiero definir recompensas (p. ej. "1 capítulo de serie = 30 de oro") y canjearlas, para darme premios reales.
 ```gherkin
+Escenario: Crear, editar y archivar
+  Cuando creo "Serie" (30 de oro), la edito a 25 y luego la archivo
+  Entonces ya no aparece para canjear, pero sus canjes siguen en el historial
+
 Escenario: Canjear
   Dado que tengo 50 de oro y la recompensa "Serie" cuesta 30
   Cuando la canjeo
-  Entonces me quedan 20 de oro y se publica rpg.RecompensaCanjeada
+  Entonces se registra un asiento de oro gastado, me quedan 20 y se publica rpg.RecompensaCanjeada
 
 Escenario: Oro insuficiente
   Dado que tengo 10 de oro
-  Entonces el botón "Canjear" está desactivado y dice cuánto falta
+  Entonces el botón "Canjear" está desactivado y dice cuánto falta, y el oro nunca queda negativo
 
 Escenario: Deshacer canje
-  Cuando deshago un canje en los siguientes 10 s
+  Cuando deshago un canje en los siguientes 10 s (barra del shell)
   Entonces recupero el oro
+```
+
+#### R6 — Atributos con niveles propios · 2 pts · todas (adelantada a la iteración 6 por decisión del usuario)
+Como estudiante, quiero que cada atributo (Intelecto, Disciplina, Organización, Bienestar) tenga su propio nivel, para ver en qué estoy creciendo.
+```gherkin
+Escenario: Nivel por atributo
+  Dado que Intelecto acumula 100 XP
+  Entonces Intelecto está en nivel 2 (fórmula del nivel con base 50 y exponente 1,5, en configuración)
+  Y Progreso muestra la barra de cada atributo hacia su siguiente nivel
+
+Escenario: Subir un atributo
+  Cuando Intelecto pasa de nivel 2 a 3
+  Entonces se publica rpg.NivelDeAtributoAlcanzado y R5 lo muestra en el aviso (agrupado con otros si coinciden)
 ```
 
 #### R5 — Avisos de nivel y logro · 2 pts · todas
@@ -705,6 +759,10 @@ Como estudiante, quiero ver un aviso breve cuando subo de nivel o desbloqueo un 
 ```gherkin
 Escenario: Subir de nivel
   Cuando se publica rpg.NivelAlcanzado
-  Entonces aparece un aviso "¡Nivel 3!" que se cierra solo en 5 s o con Escape
-  Y respeta prefers-reduced-motion (sin animación)
+  Entonces aparece un aviso "¡Nivel 3!" anunciado por lectores de pantalla (aria-live)
+  Y se cierra solo en 5 s o con Escape, y respeta prefers-reduced-motion (sin animación)
+
+Escenario: Varios logros juntos
+  Cuando se desbloquean 3 logros a la vez
+  Entonces veo un solo aviso: "3 logros: Primer foco, Semestre en marcha y Constancia"
 ```

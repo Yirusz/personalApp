@@ -19,6 +19,7 @@ import { destinoEnAlmacen, RegistroDeDiagnostico } from './nucleo/infraestructur
 import { aleatorioCriptografico, relojDelSistema } from './nucleo/infraestructura/reloj-del-sistema';
 import { crearIntegraciones } from './nucleo/aplicacion/integraciones';
 import { notificadorDelNavegador } from './nucleo/infraestructura/notificaciones';
+import { avisadorDelShell } from './ui/avisos';
 import { registrarServiceWorker, type EstadoDelServiceWorker } from './nucleo/infraestructura/service-worker';
 import { aplicarApariencia, leerApariencia } from './ui/apariencia';
 import { App, type EstadoDelShell } from './ui/App';
@@ -68,6 +69,7 @@ async function iniciar(raiz: HTMLElement): Promise<void> {
           diagnostico,
           notificaciones: notificadorDelNavegador,
           integraciones,
+          avisos: avisadorDelShell,
           navegar,
         };
         contextos.set(moduloId, ctx);
