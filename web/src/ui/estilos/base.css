@@ -385,6 +385,13 @@ a {
 [data-color='amarillo'] { --color-cat: var(--color-cat-amarillo); }
 [data-color='gris'] { --color-cat: var(--color-cat-gris); }
 
+/* Barras rellenas (mes, día, semana): fondo y texto con ≥ 4,5:1 (calculado con rellenoLegible). */
+[data-color] {
+  --color-relleno: var(--color-cat);
+  --color-sobre-relleno: light-dark(#ffffff, #111614);
+}
+[data-color='naranja'] { --color-relleno: light-dark(#b85900, #ffb74d); }
+
 .marca-color {
   display: inline-block;
   flex: none;
