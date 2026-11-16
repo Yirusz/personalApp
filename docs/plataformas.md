@@ -84,13 +84,13 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 8. **Filtros, deshacer, sin conexión:** filtrar "Calificados", recargar → se conserva. Eliminar un trabajo → Deshacer. Archivar una materia → Deshacer (Ctrl+Z en escritorio). En modo avión, recargar y registrar/entregar: todo funciona.
 9. **Android:** el teclado numérico aparece en peso y nota; atrás vuelve de la ficha a la lista; los botones de subtarea (✕) se tocan sin errores.
 
-### Iteración 4 — Revisión del Calendario (guion de prueba manual, ~12 min por entorno)
-1. **Preparar:** en Universidad, crear "Cálculo II" (verde) y "Física I" (azul).
-2. **Fichas propias:** Calendario → Fichas → Gestionar → "Gimnasio", 1 hora, Solo una vez, color Otro (elige un amarillo claro). En tema claro debe verse oliva legible; en oscuro, amarillo.
-3. **Poner:** vista Semana de la próxima semana → "Fichas" → elegir "Cálculo II" → tocar lunes 7:00 y miércoles 7:00 → "Deshacer" aparece cada vez. Ir a la semana siguiente: las clases siguen ahí.
-4. **Quitar:** con "Cálculo II" activa, las clases puestas muestran ✕; tocar una → desaparece la serie; "Deshacer" la devuelve. "Listo" (o Esc) suelta la ficha.
-5. **Escritorio:** arrastrar la ficha "Gimnasio" a un hueco; arrastrar con el mouse de 14:00 a 16:00 en un día vacío → "Nuevo evento" con ese rango.
-6. **Formulario:** "+ Nuevo evento" → "Usar una ficha: Física I" → se llenan título, color, 2 h y repetición; guardar y abrir el evento → "Vinculado a: Física I" enlaza a Universidad.
-7. **360 px / Android:** la semana muestra 7 columnas sin desplazamiento horizontal; el "+" flotante crea; tocar el encabezado "L 16" abre el día; el mes muestra puntos de color.
-8. **Sin conexión:** modo avión, recargar y poner/quitar una ficha: funciona igual.
-9. Recordatorios e .ics: repetir los pasos 8 y 10 del guion de la iteración 2 (sin cambios).
+### Iteración 4 — Revisión del Calendario (0.5.1; guion de prueba manual, ~12 min por entorno)
+1. **Sin eventos:** en un perfil nuevo, Calendario → Día, Semana y Mes muestran la cuadrícula (no el mensaje de "sin eventos").
+2. **Preparar:** en Universidad, crear "Cálculo II" (verde) y "Física I" (azul).
+3. **Barra lateral (escritorio y tableta):** en Semana, la barra "Fichas" está a la izquierda. Arrastrar "Cálculo II" al lunes 7:00: mientras se mueve se ve "Cálculo II · 7:00 a. m."; al soltar aparece "Deshacer". Repetir en miércoles. La semana siguiente las clases siguen ahí.
+4. **Mes:** arrastrar "Física I" a un día del mes → se abre ese día con "Elige la hora"; tocar las 3:00 p. m. → queda puesta.
+5. **Teléfono (Android):** "▦" abre la franja de fichas; arrastrar una ficha hacia abajo con el dedo hasta la semana (7 columnas) la pone; deslizar de lado mueve la franja.
+6. **Quitar:** tocar una ficha (queda con ✓) → las clases que puso muestran ✕; tocar una → se quita la serie, con "Deshacer". "Listo" o Esc suelta la ficha.
+7. **Vistas:** Día muestra "LUN 16" y las 24 horas desplazando; Mes: barras rellenas para todo el día (continuas entre días) y "● 7:00 título" para lo que tiene hora.
+8. **Color:** "+ Nuevo evento" → Color → "Otro": el selector aparece en la página (sin ventana). Probar el área con mouse/dedo y con flechas, la barra de tono, escribir #e65100 y los colores rápidos. En tema oscuro el color se aclara para leerse.
+9. **Formulario con ficha y vínculo, sin conexión, recordatorios e .ics:** igual que en la 0.5.0.

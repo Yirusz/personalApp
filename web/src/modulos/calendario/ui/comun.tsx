@@ -1,9 +1,9 @@
 /** Piezas de UI compartidas por las pantallas del Calendario. */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ContextoDeModulo, ReferenciaDeEntidad, ResultadoDeFichas } from '../../../nucleo/contrato';
 import { COLORES_CATEGORICOS } from '../../../nucleo/dominio/agenda';
-import { esColorHex, type ColorDeAgenda } from '../../../nucleo/dominio/color';
+import { esColorHex, hexDesdeHsv, hsvDesdeHex, type ColorDeAgenda, type ColorHex, type Hsv } from '../../../nucleo/dominio/color';
 import type { Vinculo } from '../../../nucleo/dominio/fichas';
 import { atributosDeColor } from '../../../ui/color';
 import type { Traductor } from '../../../nucleo/i18n/traductor';
@@ -99,6 +99,7 @@ const fmtDiaLargo = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 
 const fmtDiaCorto = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
 const fmtDiaMes = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', day: 'numeric', month: 'short' });
 const fmtHoraSola = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', hour: 'numeric' });
+const fmtDiaSemana = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'short' });
 
 export const fechas = {
   mesAnio: (f: string) => fmtMesAnio.format(enUtc(f)),
@@ -107,6 +108,8 @@ export const fechas = {
   diaMes: (f: string) => fmtDiaMes.format(enUtc(f)),
   /** Etiqueta de la cuadrícula horaria: "7 a. m.". */
   horaSola: (h: number) => fmtHoraSola.format(new Date(Date.UTC(2000, 0, 1, h))),
+  /** "lun", "mar"… (se muestra en mayúsculas, como Google). */
+  diaSemana: (f: string) => fmtDiaSemana.format(enUtc(f)).replace('.', ''),
 };
 
 export const hoyCivil = (ctx: ContextoDeModulo) => zonaDelUsuario().aCivil(ctx.reloj.ahora().getTime()).fecha;
@@ -309,40 +312,163 @@ export function GarantiasDeAviso({ ctx }: { ctx: ContextoDeModulo }) {
 // Color: paleta + hex libre (H1, ADR-0015)
 // ---------------------------------------------------------------------------
 
-/** Paleta y "otro color" (#rrggbb con el selector nativo). El color hex se vuelve legible solo. */
+/** Muestras rápidas del color libre (además de la paleta). Nombres propios, valores propios. */
+const MUESTRAS: readonly [string, ColorHex][] = [
+  ['tomate', '#d32f2f'],
+  ['coral', '#ff7043'],
+  ['mandarina', '#f57c00'],
+  ['mostaza', '#f9a825'],
+  ['menta', '#26a69a'],
+  ['bosque', '#1b5e20'],
+  ['cielo', '#039be5'],
+  ['indigo', '#3949ab'],
+  ['lavanda', '#9575cd'],
+  ['uva', '#7b1fa2'],
+  ['cacao', '#6d4c41'],
+  ['pizarra', '#455a64'],
+];
+
+/** Paleta y "otro color": al elegirlo se despliega el selector en la misma página (sin ventanas emergentes). */
 export function SelectorDeColor({ ctx, nombre, valor, cambiar, error }: { ctx: ContextoDeModulo; nombre: string; valor: ColorDeAgenda; cambiar: (c: ColorDeAgenda) => void; error?: string }) {
   const t = ctx.t;
   const hex = esColorHex(valor);
-  const [ultimoHex, setUltimoHex] = useState<string>(hex ? valor : '#ff7043');
+  const [ultimoHex, setUltimoHex] = useState<ColorHex>(hex ? valor : '#ff7043');
+  const elegirHex = (h: ColorHex) => {
+    setUltimoHex(h);
+    cambiar(h);
+  };
   return (
-    <fieldset class="grupo grupo--en-linea" aria-describedby={error ? `calendario-${nombre}-error` : undefined}>
+    <fieldset class="grupo pila" aria-describedby={error ? `calendario-${nombre}-error` : undefined}>
       <legend>{t('calendario.campo.color')}</legend>
-      {COLORES_CATEGORICOS.map((c) => (
-        <label key={c} class="opcion" data-color={c}>
-          <input type="radio" name={`calendario-${nombre}`} checked={valor === c} onChange={() => cambiar(c)} />
+      <div class="grupo--en-linea">
+        {COLORES_CATEGORICOS.map((c) => (
+          <label key={c} class="opcion" data-color={c}>
+            <input type="radio" name={`calendario-${nombre}`} checked={valor === c} onChange={() => cambiar(c)} />
+            <span class="marca-color" aria-hidden="true" />
+            {t(`calendario.color.${c}`)}
+          </label>
+        ))}
+        <label class="opcion" {...atributosDeColor(ultimoHex)}>
+          <input type="radio" name={`calendario-${nombre}`} checked={hex} aria-expanded={hex} onChange={() => cambiar(ultimoHex)} />
           <span class="marca-color" aria-hidden="true" />
-          {t(`calendario.color.${c}`)}
+          {t('calendario.color.otro')}
         </label>
-      ))}
-      <label class="opcion" {...atributosDeColor(ultimoHex as ColorDeAgenda)}>
-        <input type="radio" name={`calendario-${nombre}`} checked={hex} onChange={() => cambiar(ultimoHex as ColorDeAgenda)} />
-        <span class="marca-color" aria-hidden="true" />
-        {t('calendario.color.otro')}
-      </label>
-      <input
-        type="color"
-        class="cal-color-libre"
-        value={ultimoHex}
-        aria-label={t('calendario.color.elegirOtro')}
-        onInput={(e) => {
-          const v = (e.currentTarget as HTMLInputElement).value.toLowerCase();
-          setUltimoHex(v);
-          cambiar(v as ColorDeAgenda);
-        }}
-      />
-      {hex && <span class="campo__ayuda">{t('calendario.color.otroAyuda', { hex: valor })}</span>}
+      </div>
+      {hex && <SelectorDeColorLibre ctx={ctx} nombre={nombre} valor={valor} cambiar={elegirHex} />}
       <ErrorDeCampo campo={nombre} error={error} />
     </fieldset>
+  );
+}
+
+const PATRON_HEX_ESCRITO = /^#?([0-9a-f]{6})$/i;
+
+function SelectorDeColorLibre({ ctx, nombre, valor, cambiar }: { ctx: ContextoDeModulo; nombre: string; valor: ColorHex; cambiar: (h: ColorHex) => void }) {
+  const t = ctx.t;
+  // Se guarda el HSV además del hex: así el tono no se pierde al pasar por blanco, gris o negro.
+  const [hsv, setHsv] = useState<Hsv>(() => hsvDesdeHex(valor));
+  const [texto, setTexto] = useState<string>(valor);
+  const [hexInvalido, setHexInvalido] = useState(false);
+  const actual = useRef(hsv);
+  actual.current = hsv;
+  useEffect(() => {
+    if (hexDesdeHsv(actual.current) !== valor) setHsv(hsvDesdeHex(valor));
+    setTexto(valor);
+    setHexInvalido(false);
+  }, [valor]);
+
+  const aplicar = (n: Hsv) => {
+    const limpio = { h: Math.round(n.h), s: Math.round(Math.min(100, Math.max(0, n.s))), v: Math.round(Math.min(100, Math.max(0, n.v))) };
+    setHsv(limpio);
+    actual.current = limpio;
+    cambiar(hexDesdeHsv(limpio));
+  };
+  const desdePuntero = (e: PointerEvent) => {
+    const caja = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    aplicar({ ...actual.current, s: ((e.clientX - caja.left) / caja.width) * 100, v: 100 - ((e.clientY - caja.top) / caja.height) * 100 });
+  };
+  const alTeclear = (e: KeyboardEvent) => {
+    const paso = e.shiftKey ? 10 : 1;
+    const h = actual.current;
+    const mapa: Record<string, Partial<Hsv>> = { ArrowLeft: { s: h.s - paso }, ArrowRight: { s: h.s + paso }, ArrowUp: { v: h.v + paso }, ArrowDown: { v: h.v - paso } };
+    const cambio = mapa[e.key];
+    if (!cambio) return;
+    e.preventDefault();
+    aplicar({ ...h, ...cambio });
+  };
+
+  return (
+    <div class="cal-color-libre" {...atributosDeColor(valor)}>
+      <div
+        class="cal-color-libre__area"
+        style={{ '--tono': hsv.h, '--s': hsv.s, '--v': hsv.v }}
+        role="slider"
+        tabIndex={0}
+        aria-label={t('calendario.color.area')}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={hsv.s}
+        aria-valuetext={t('calendario.color.areaValor', { s: hsv.s, v: hsv.v })}
+        onPointerDown={(e) => {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          desdePuntero(e);
+        }}
+        onPointerMove={(e) => (e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId) && desdePuntero(e)}
+        onKeyDown={alTeclear}
+      >
+        <span class="cal-color-libre__cursor" aria-hidden="true" />
+      </div>
+      <label class="cal-color-libre__etiqueta" for={`calendario-${nombre}-tono`}>
+        {t('calendario.color.tono')}
+      </label>
+      <input
+        id={`calendario-${nombre}-tono`}
+        class="cal-color-libre__tono"
+        type="range"
+        min={0}
+        max={359}
+        value={hsv.h}
+        aria-valuetext={t('calendario.color.tonoValor', { n: hsv.h })}
+        onInput={(e) => aplicar({ ...actual.current, h: Number((e.currentTarget as HTMLInputElement).value) })}
+      />
+      <div class="cal-color-libre__fila">
+        <div class="campo">
+          <label for={`calendario-${nombre}-hex`}>{t('calendario.color.hex')}</label>
+          <input
+            id={`calendario-${nombre}-hex`}
+            class="cal-color-libre__hex"
+            value={texto}
+            maxLength={7}
+            spellcheck={false}
+            autoComplete="off"
+            autoCapitalize="off"
+            aria-invalid={hexInvalido ? 'true' : undefined}
+            aria-describedby={hexInvalido ? `calendario-${nombre}-hex-error` : undefined}
+            onInput={(e) => {
+              const v = (e.currentTarget as HTMLInputElement).value.trim();
+              setTexto(v);
+              const m = PATRON_HEX_ESCRITO.exec(v);
+              setHexInvalido(false);
+              if (m) cambiar(`#${m[1]!.toLowerCase()}` as ColorHex);
+            }}
+            onBlur={() => setHexInvalido(!PATRON_HEX_ESCRITO.test(texto))}
+          />
+          {hexInvalido && (
+            <span id={`calendario-${nombre}-hex-error`} class="campo__error">
+              {t('calendario.color.hexInvalido')}
+            </span>
+          )}
+        </div>
+        <span class="cal-color-libre__muestra" aria-hidden="true">
+          {t('calendario.color.ejemplo')}
+        </span>
+      </div>
+      <div class="cal-color-libre__muestras" role="group" aria-label={t('calendario.color.rapidos')}>
+        {MUESTRAS.map(([n, h]) => (
+          <button key={h} type="button" class="cal-color-libre__rapido" style={{ background: h }} aria-pressed={valor === h} aria-label={t(`calendario.color.muestra.${n}`)} title={t(`calendario.color.muestra.${n}`)} onClick={() => cambiar(h)} />
+        ))}
+      </div>
+      <p class="campo__ayuda">{t('calendario.color.otroAyuda', { hex: valor })}</p>
+    </div>
   );
 }
 

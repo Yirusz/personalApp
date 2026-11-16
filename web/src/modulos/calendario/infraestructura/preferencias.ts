@@ -23,12 +23,14 @@ export function guardarVista(vista: Vista): void {
 
 const CLAVE_FICHAS = 'ludus.calendario.panelDeFichas';
 
-/** ¿Panel de fichas abierto en día y semana? (cerrado por defecto). */
+/** ¿Barra de fichas abierta? Si nunca se eligió: abierta en pantallas anchas (≥ 960 px), cerrada en las demás. */
 export function leerPanelDeFichas(): boolean {
+  const porDefecto = typeof matchMedia === 'function' && matchMedia('(min-width: 960px)').matches;
   try {
-    return localStorage.getItem(CLAVE_FICHAS) === '1';
+    const v = localStorage.getItem(CLAVE_FICHAS);
+    return v === null ? porDefecto : v === '1';
   } catch {
-    return false;
+    return porDefecto;
   }
 }
 
