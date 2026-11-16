@@ -83,3 +83,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Sin oro suficiente: que se note sin depender solo del color (el texto "Te faltan…" lo explica). */
+.rpg-recompensa .boton:disabled {
+  opacity: 1;
+  border-style: dashed;
+  border-color: var(--color-borde);
+  background: transparent;
+  color: var(--color-texto-tenue);
+}
