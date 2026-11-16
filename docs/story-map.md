@@ -502,13 +502,31 @@ Escenario: Una vez por semana
 ### Estudio (15 pts)
 
 #### E1 — Pomodoro con fases · 5 pts · todas
-Como estudiante, quiero un temporizador Pomodoro (foco/descanso corto/descanso largo), opcionalmente ligado a una materia, para estudiar concentrado.
+Como estudiante, quiero un temporizador Pomodoro (foco/descanso corto/descanso largo), opcionalmente ligado a una materia o a un trabajo, para estudiar concentrado.
 ```gherkin
 Escenario: Ciclo completo
   Dada la configuración 25/5/15 con descanso largo cada 4
   Cuando inicio foco para "Cálculo II" y pasan 25 min
-  Entonces la sesión se completa, se publica estudio.PomodoroCompletado con materiaId y minutosFoco 25
-  Y se propone el descanso corto
+  Entonces la sesión se completa, se publica estudio.PomodoroCompletado con el vínculo {tipo: universidad.materia, id} y minutosFoco 25
+  Y se propone el descanso corto; tras el 4.º foco, el largo
+
+Escenario: Vincular a un trabajo
+  Cuando inicio foco para el trabajo "Parcial 1"
+  Entonces la sesión guarda {tipo: universidad.trabajo, id} y muestra "Parcial 1 · Cálculo II"
+
+Escenario: Vínculo que ya no existe o Universidad no responde
+  Dado una sesión vinculada a una materia que se borró (o Universidad falla)
+  Entonces se muestra "ya no existe" (o "sin materia") y el temporizador y las estadísticas siguen funcionando
+
+Escenario: Pausar y reanudar
+  Dado un foco de 25 min en curso
+  Cuando lo pauso a los 10 min durante 5 min y lo reanudo
+  Entonces quedan 15 min y termina 30 min después de haber empezado
+
+Escenario: Saltar el descanso
+  Dado un descanso en curso
+  Cuando lo salto
+  Entonces no se publica DescansoCompletado y se propone el siguiente foco
 
 Escenario: Interrumpir
   Cuando detengo el foco a los 10 min
@@ -534,6 +552,12 @@ Escenario: Guardar
 Escenario: Límites
   Cuando pongo foco 0 o 200 min
   Entonces se indica el rango válido (5–90) y no se guarda
+  Y los descansos aceptan 1–60 min y "largo cada" 2–8 focos
+
+Escenario: La sesión en curso no cambia
+  Dado un foco de 25 min en curso
+  Cuando cambio el foco a 50
+  Entonces el foco actual sigue siendo de 25 y el próximo será de 50
 ```
 
 #### E3 — Aviso al terminar (app visible) · 3 pts · todas (vibración solo Android)
@@ -547,6 +571,18 @@ Escenario: App visible
 Escenario: Sin capacidades
   Dado un navegador sin vibración ni notificaciones
   Entonces solo suena el tono y se ve el aviso en pantalla, sin errores
+
+Escenario: Tono permitido por el navegador
+  Cuando toco "Iniciar"
+  Entonces se prepara el audio (Web Audio) para que el tono pueda sonar al terminar
+
+Escenario: Pantalla encendida (opcional)
+  Dado que activo "Mantener la pantalla encendida" y el navegador lo permite
+  Entonces la pantalla no se apaga durante la fase y se libera al pausar o terminar
+  Y si el navegador no lo permite, la opción no aparece
+
+Escenario: Lo que no está garantizado
+  Entonces la pantalla dice que con Ludus cerrado o la pantalla bloqueada no hay aviso, y que al volver se ve el resultado
 ```
 
 #### E4 — Sesiones y estadísticas simples · 3 pts · todas
@@ -556,6 +592,9 @@ Escenario: Resumen
   Dado 4 Pomodoros de Cálculo y 2 de Física hoy
   Cuando abro Estudio
   Entonces veo "Hoy: 2 h 30 min" y el reparto por materia
+
+Escenario: Semana
+  Entonces veo una barra por día (lunes a domingo, hora de Bogotá) con los minutos de foco
 
 Escenario: Estado vacío
   Dado que no he estudiado esta semana
@@ -575,6 +614,16 @@ Escenario: Recargar la página
   Dado un foco en curso
   Cuando recargo Ludus
   Entonces el temporizador continúa con el tiempo restante correcto
+
+Escenario: Dos pestañas
+  Dado Ludus abierto en dos pestañas con el mismo foco
+  Cuando termina
+  Entonces se completa y se publica PomodoroCompletado una sola vez
+
+Escenario: Cruzar la medianoche
+  Dado un foco que empieza a las 23:40 (Bogotá) y Android congela la app
+  Cuando vuelvo a las 00:10
+  Entonces el foco cuenta para el día en que terminó (00:05), no para la hora en que volví
 ```
 
 ### RPG (18 pts)

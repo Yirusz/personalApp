@@ -342,16 +342,23 @@ export class AlmacenIndexedDb implements MotorDeAlmacen, MotorDeRespaldo {
 
     const transaccion: Transaccion = {
       ...operaciones(resolverModulo),
-      publicar: (tipo, datos) => {
+      publicar: (tipo, datos, opciones) => {
         if (modo !== 'readwrite') throw new ErrorDeAlmacen('No se publican eventos en una transacción de lectura');
         const declaracion = esquema.eventos?.[tipo];
         if (!declaracion) throw new ErrorDeAlmacen(`"${moduloId}" no declaró el evento "${tipo}"`);
+        const ahora = this.reloj.ahora().getTime();
+        let ocurrido = ahora;
+        if (opciones?.ocurridoEn !== undefined) {
+          ocurrido = /^\d{4}-\d{2}-\d{2}T/.test(opciones.ocurridoEn) ? Date.parse(opciones.ocurridoEn) : NaN;
+          if (Number.isNaN(ocurrido)) throw new ErrorDeAlmacen(`ocurridoEn inválido: ${opciones.ocurridoEn}`);
+          if (ocurrido > ahora) throw new ErrorDeAlmacen('ocurridoEn no puede estar en el futuro');
+        }
         const evento = {
           id: this.ids.siguiente(),
           tipo,
           modulo: moduloId,
           version: declaracion.version,
-          ocurridoEn: this.reloj.ahora().toISOString(),
+          ocurridoEn: new Date(ocurrido).toISOString(),
           datos,
         };
         // Sin await a propósito: un fallo aborta la transacción y se reporta abajo.
