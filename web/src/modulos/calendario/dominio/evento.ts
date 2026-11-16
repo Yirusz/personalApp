@@ -4,7 +4,8 @@
  * - Todo el día: `inicio`/`fin` son fechas civiles `AAAA-MM-DD` (fin inclusivo), sin hora ni zona.
  * - Recurrente: `recurrencia` + `excepciones` por fecha civil original (cancelada o modificada).
  */
-import { esColorCategorico, type ColorCategorico } from '../../../nucleo/dominio/agenda';
+import { esColorDeAgenda, type ColorDeAgenda } from '../../../nucleo/dominio/color';
+import { vinculo as vinculoValido, type Vinculo } from '../../../nucleo/dominio/fichas';
 import { esFechaCivil, MS_DIA, MS_MINUTO, type Zona } from '../../../nucleo/dominio/zona-horaria';
 import {
   ColorDeEventoInvalido,
@@ -18,6 +19,7 @@ import {
   RecurrenciaInvalida,
   TextoDemasiadoLargo,
   TituloDeEventoInvalido,
+  VinculoInvalido,
 } from './errores';
 import { instanciar } from './expansion';
 import { diferenciaDias, sumarDias } from './fechas';
@@ -45,11 +47,15 @@ export interface DatosDeOcurrencia {
 export type Excepcion = { cancelada: true } | ({ cancelada: false } & DatosDeOcurrencia);
 
 export interface DatosDeEvento extends DatosDeOcurrencia {
-  color: ColorCategorico;
+  color: ColorDeAgenda;
   todoElDia: boolean;
   recordatorios: number[];
   recurrencia: Recurrencia | null;
   compromiso: boolean;
+  /** Entidad de otro módulo (H9); ausente en datos viejos = null. */
+  vinculo?: Vinculo | null;
+  /** `<modulo>:<fichaId>` con la que se creó (H8). */
+  ficha?: string | null;
 }
 
 export interface EventoDeCalendario extends DatosDeEvento {
@@ -65,11 +71,13 @@ export interface EventoDeCalendario extends DatosDeEvento {
 
 const PATRON_INSTANTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 
+export const FICHA_CLAVE_MAX = 200;
+
 function texto(valor: string): string {
   return valor.normalize('NFC').trim();
 }
 
-function titulo(valor: string): string {
+export function titulo(valor: string): string {
   const limpio = texto(valor).replace(/\s+/g, ' ');
   if (!limpio) throw new TituloDeEventoInvalido('vacio', TITULO_MAX);
   if (limpio.length > TITULO_MAX) throw new TituloDeEventoInvalido('largo', TITULO_MAX);
@@ -125,7 +133,16 @@ function moverA(datos: { todoElDia: boolean; inicio: string; fin: string }, fech
 }
 
 function validarDatos(d: DatosDeEvento, zona: Zona): DatosDeEvento {
-  if (!esColorCategorico(d.color)) throw new ColorDeEventoInvalido(`Color fuera de la paleta: ${String(d.color)}`);
+  if (!esColorDeAgenda(d.color)) throw new ColorDeEventoInvalido(`Color inválido: ${String(d.color)}`);
+  let vinculo: Vinculo | null = null;
+  if (d.vinculo) {
+    try {
+      vinculo = vinculoValido(d.vinculo);
+    } catch {
+      throw new VinculoInvalido('Vínculo mal formado');
+    }
+  }
+  const ficha = typeof d.ficha === 'string' && d.ficha && d.ficha.length <= FICHA_CLAVE_MAX ? d.ficha : null;
   let { inicio, fin } = intervalo(d.todoElDia, d.inicio, d.fin);
   let recurrencia: Recurrencia | null = null;
   if (d.recurrencia) {
@@ -144,13 +161,15 @@ function validarDatos(d: DatosDeEvento, zona: Zona): DatosDeEvento {
     titulo: titulo(d.titulo),
     lugar: opcional(d.lugar, 'lugar', LUGAR_MAX),
     notas: opcional(d.notas, 'notas', NOTAS_MAX),
-    color: d.color,
+    color: d.color.toLowerCase() as ColorDeAgenda,
     todoElDia: d.todoElDia,
     inicio,
     fin,
     recordatorios: recordatorios(d.recordatorios),
     recurrencia,
     compromiso: d.compromiso,
+    vinculo,
+    ficha,
   };
 }
 

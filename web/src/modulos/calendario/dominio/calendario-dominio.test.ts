@@ -35,6 +35,7 @@ import {
 } from './errores';
 
 const BOGOTA = crearZona('America/Bogota');
+const AHORA_HEX = new Date('2026-11-15T20:00:00Z');
 const AHORA = new Date('2026-11-15T15:00:00Z'); // domingo 15 nov, 10:00 en Bogotá
 const ms = (iso: string) => Date.parse(iso);
 const hora = (iso: string) => BOGOTA.aCivil(ms(iso));
@@ -59,6 +60,21 @@ const evento = (cambios: Partial<DatosDeEvento> = {}, id = 'ev1'): EventoDeCalen
   crearEvento({ id, ...datos(cambios) }, BOGOTA, AHORA);
 
 const rango = (desde: string, hasta: string) => ({ desdeMs: ms(desde), hastaMs: ms(hasta) });
+
+describe('Color hex y vínculo en eventos (H1, H9)', () => {
+  it('acepta un color hex (normalizado) además de la paleta, y guarda el vínculo y la ficha', () => {
+    const e = crearEvento({ ...datos({ color: '#FF7043' as never }), vinculo: { tipo: 'universidad.materia', id: 'm1' }, ficha: 'universidad:m1', id: 'e1' }, BOGOTA, AHORA_HEX);
+    expect(e).toMatchObject({ color: '#ff7043', vinculo: { tipo: 'universidad.materia', id: 'm1' }, ficha: 'universidad:m1' });
+    expect(ocurrenciasEnRango(e, { desdeMs: Date.parse('2026-11-17T00:00:00Z'), hastaMs: Date.parse('2026-11-18T00:00:00Z') }, BOGOTA)[0]).toMatchObject({ color: '#ff7043', vinculo: { tipo: 'universidad.materia', id: 'm1' }, ficha: 'universidad:m1' });
+  });
+  it('rechaza colores y vínculos mal formados', () => {
+    expect(() => crearEvento({ ...datos({ color: '#12345' as never }), id: 'e1' }, BOGOTA, AHORA_HEX)).toThrow(expect.objectContaining({ clave: 'calendario.error.color' }));
+    expect(() => crearEvento({ ...datos(), vinculo: { tipo: 'x', id: '' }, id: 'e1' }, BOGOTA, AHORA_HEX)).toThrow(expect.objectContaining({ clave: 'calendario.error.vinculo' }));
+  });
+  it('sin vínculo ni ficha quedan en null (datos viejos siguen siendo válidos)', () => {
+    expect(crearEvento({ ...datos(), id: 'e1' }, BOGOTA, AHORA_HEX)).toMatchObject({ vinculo: null, ficha: null });
+  });
+});
 
 describe('fechas civiles', () => {
   it('suma días cruzando mes y año, y calcula el día de la semana (lunes = 1)', () => {

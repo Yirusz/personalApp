@@ -3,7 +3,8 @@
  * Vienen de afuera: se validan y, si están mal formados, se rechazan sin
  * afectar al resto (la proyección los omite y lo anota en Diagnóstico).
  */
-import { esColorCategorico, type ElementoDeAgenda } from '../../../nucleo/dominio/agenda';
+import { type ElementoDeAgenda } from '../../../nucleo/dominio/agenda';
+import { esColorDeAgenda, type ColorDeAgenda } from '../../../nucleo/dominio/color';
 import { esFechaCivil, type Zona } from '../../../nucleo/dominio/zona-horaria';
 import { ElementoDeAgendaInvalido } from './errores';
 import { sumarDias } from './fechas';
@@ -33,7 +34,7 @@ export function validarElementoDeAgenda(valor: unknown): ElementoDeAgenda & { ru
     ...(todoElDia ? { todoElDia } : {}),
     tipo: v.tipo as ElementoDeAgenda['tipo'],
     estado: v.estado as ElementoDeAgenda['estado'],
-    ...(esColorCategorico(v.color) ? { color: v.color } : {}),
+    ...(esColorDeAgenda(v.color) ? { color: v.color.toLowerCase() as ColorDeAgenda } : {}),
     ...(typeof v.ruta === 'string' && v.ruta.startsWith('/') ? { ruta: v.ruta } : {}),
   };
 }

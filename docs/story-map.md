@@ -270,6 +270,77 @@ Escenario: Nota inválida
 
 **Integración (ADR-0013, ~2 pts):** fuente de calendario `universidad.entregas` (las entregas aparecen en el calendario con el color de la materia, se tachan al entregar, enlazan a la ficha; la copia vieja por eventos no se duplica) y referencias `universidad.materia` / `universidad.trabajo` para Estudio y Notas.
 
+### Calendario v2 (iteración 4: ~23 pts, ADR-0015)
+
+Revisión pedida por el usuario. H2 (recurrencia), H4 (otros módulos), H5 (recordatorios) y H6 (.ics) ya estaban hechas desde la iteración 2 y se reverificaron. Nuevas o rehechas:
+
+#### H1 — Color libre · 2 pts · todas
+```gherkin
+Escenario: Color hex legible
+  Dado que creo un evento con el color "Otro" #ffeb3b
+  Entonces en tema claro se ve una variante más oscura y en tema oscuro el amarillo, ambas con contraste ≥ 3:1
+  Y un color mal formado se rechaza con "Elige un color de la lista u otro con el selector"
+```
+
+#### H7a — Vistas como Google/Samsung · 5 pts · todas
+```gherkin
+Escenario: Crear tocando o arrastrando
+  Dado que estoy en la vista semana
+  Cuando toco el hueco del miércoles a las 14:40
+  Entonces se abre "Nuevo evento" a las 14:30
+  Y en escritorio, si arrastro de 14:00 a 16:00, el evento nuevo viene con ese rango
+
+Escenario: Ahora
+  Entonces una línea roja marca la hora actual en el día de hoy y se mueve cada minuto
+```
+
+#### H7b — Semana de 7 columnas en 360 px · 3 pts · todas
+```gherkin
+Escenario: Semana en el teléfono
+  Dado una pantalla de 360 px
+  Entonces la semana muestra L–D en 7 columnas con el número del día, sin desplazamiento horizontal
+  Y tocar el encabezado de un día abre la vista día; "+" flotante crea un evento
+```
+
+#### H8a — Panel de fichas · 5 pts · todas
+```gherkin
+Escenario: Poner la clase de una materia
+  Dado que tengo la materia "Cálculo II" en Universidad
+  Cuando abro "Fichas" en la vista semana, elijo "Cálculo II" y toco el lunes a las 7:00
+  Entonces se crea "Cálculo II" de 7:00 a 9:00 cada lunes durante 16 semanas, vinculada a la materia
+  Y aparece "Deshacer" durante 10 s
+
+Escenario: Arrastrar en escritorio
+  Cuando arrastro la ficha "Gimnasio" al sábado 9:00
+  Entonces se pone ahí
+
+Escenario: Un módulo falla
+  Dado que las fichas de un módulo no cargan
+  Entonces veo las demás y un aviso con su nombre
+```
+
+#### H8b — Quitar y fichas propias · 3 pts · todas
+```gherkin
+Escenario: Quitar con la ficha activa
+  Dado que la ficha "Cálculo II" está activa
+  Cuando toco una clase de Cálculo II (marcada con ✕)
+  Entonces se quita toda la serie, con "Deshacer"
+
+Escenario: Ficha propia
+  Cuando creo la ficha "Gimnasio" (1 hora, solo una vez, color #ffeb3b)
+  Entonces aparece en el panel junto a las de Universidad
+  Y eliminarla no borra lo que ya puse
+```
+
+#### H9 — Usar fichas y vincular al crear · 3 pts · todas
+```gherkin
+Escenario: Desde el formulario (también con teclado)
+  Dado que creo un evento
+  Cuando elijo "Usar una ficha: Física I"
+  Entonces se llenan título, color, 2 h y "cada semana, 16 veces", y "Vincular a: Física I"
+  Y al abrir el evento veo "Vinculado a: Física I · 2026-2" con enlace a Universidad
+```
+
 ### Calendario (iteración 2: ~46 pts, ADR-0011)
 
 La iteración 2 amplió C1–C6 con lo que estaba después de la línea del MVP (C7–C9) y más. Historias como se implementaron (todas ✅, plataformas: todas):

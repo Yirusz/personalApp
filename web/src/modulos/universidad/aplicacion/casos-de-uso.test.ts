@@ -208,4 +208,20 @@ describe('Integración por consulta: fuente de calendario y referencias', () => 
     expect(await referencias!.buscar({ tipo: TIPO_MATERIA, ids: [m.id] })).toHaveLength(1); // por id sí aparece (para mostrar vínculos viejos)
     expect(t).toBeDefined();
   });
+
+  it('fichas: una clase semanal por materia activa, vinculada a la materia (ADR-0015)', async () => {
+    const { ctx, materia } = await preparar();
+    const m = await materia('Cálculo II');
+    const otra = await materia('Física I');
+    const { fichas } = crearProveedores(ctx);
+    expect(fichas!.nombre).toBe('universidad.fichas');
+    expect(await fichas!.fichas()).toContainEqual({ id: m.id, titulo: 'Cálculo II', detalle: '2026-2 · Ana Gómez', color: 'azul', duracionMin: 120, repeticion: { tipo: 'semanal', semanas: 16 }, vinculo: { tipo: TIPO_MATERIA, id: m.id } });
+    let cambios = 0;
+    const dejar = fichas!.alCambiar!(() => cambios++);
+    await archivarMateria(ctx, otra.id);
+    await new Promise((r) => setTimeout(r, 0));
+    expect((await fichas!.fichas()).map((f) => f.titulo)).toEqual(['Cálculo II']);
+    expect(cambios).toBeGreaterThan(0);
+    dejar();
+  });
 });

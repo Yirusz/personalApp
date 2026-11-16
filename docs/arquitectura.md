@@ -106,9 +106,9 @@ Archivo `web/src/nucleo/contrato.ts`. Cada módulo exporta por defecto `definirM
 | `eventos` | Catálogo de eventos que publica, con versión y descripción | tipo `<id>.NombreEnPasado` |
 | `suscripciones?(ctx)` | Manejadores de eventos (propios o ajenos) | id único; tipos bien formados |
 | `alIniciar?(ctx)` | Tarea mientras la app está abierta, en cualquier pantalla (recordatorios, temporizadores); devuelve cómo detenerla | errores aislados (Diagnóstico) |
-| `proveedores?(ctx)` | Datos que otros módulos pueden **consultar** (ADR-0013): `fuentesDeCalendario[]` (`ElementoDeAgenda` por rango) y `referencias` (`ReferenciaDeEntidad` por tipo, texto o ids) | creados una vez y perezosamente; si fallan, se ignoran y se anotan en Diagnóstico |
+| `proveedores?(ctx)` | Datos que otros módulos pueden **consultar** (ADR-0013): `fuentesDeCalendario[]` (`ElementoDeAgenda` por rango), `referencias` (`ReferenciaDeEntidad` por tipo, texto o ids) y `fichas` (plantillas para el calendario, ADR-0015) | creados una vez y perezosamente; si fallan, se ignoran y se anotan en Diagnóstico |
 
-Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, notificaciones, integraciones, navegar }`. `ctx.integraciones` expone `fuentesDeCalendario()`, `tiposDeReferencia()` y `buscarReferencias(consulta)` → `{referencias, fallos}`: así se leen datos de otro módulo sin importarlo ni tocar su almacén. `navegar(ruta, { reemplazar: true })` no agrega una entrada al historial ni mueve el foco (para recorrer periodos sin llenar el botón atrás). `ctx.almacen` solo ve los almacenes del módulo.
+Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloId, almacen, reloj, nuevoId, t, formatos, diagnostico, notificaciones, integraciones, navegar }`. `ctx.integraciones` expone `fuentesDeCalendario()`, `tiposDeReferencia()`, `buscarReferencias(consulta)` → `{referencias, fallos}`, `fichas()` → `{grupos, fallos}` y `alCambiarFichas()`: así se leen datos de otro módulo sin importarlo ni tocar su almacén. `navegar(ruta, { reemplazar: true })` no agrega una entrada al historial ni mueve el foco (para recorrer periodos sin llenar el botón atrás). `ctx.almacen` solo ve los almacenes del módulo.
 
 ### Cómo agregar un módulo (sin tocar los existentes)
 1. Crear `web/src/modulos/<id>/modulo.ts` con su `definirModulo`.
@@ -119,6 +119,7 @@ Cada pantalla recibe `{ ctx, params }`, con `ctx: ContextoDeModulo` = `{ moduloI
 
 ### Piezas compartidas para módulos
 - `nucleo/dominio/zona-horaria.ts`: hora civil ↔ UTC con `Intl` (sin depender de la zona del dispositivo); la usan `formatos` y el dominio del Calendario.
+- `nucleo/dominio/color.ts` (`ColorDeAgenda`: token o `#rrggbb` con variantes legibles) y `ui/color.ts` (`atributosDeColor`); `nucleo/dominio/fichas.ts` (`FichaDeCalendario`, `Vinculo`).
 - `nucleo/dominio/agenda.ts`: `ElementoDeAgenda` (lenguaje publicado para el Calendario) y la paleta `COLORES_CATEGORICOS` (tokens `--color-cat-*`, marcas con `data-color` y `.marca-color`).
 - `ctx.formatos`: además de fecha/hora/número, `entradaLocal` / `desdeEntradaLocal` (valor de `<input type="datetime-local">` siempre en hora de Bogotá, sin depender de la zona del dispositivo) y `relativo` ("mañana", "dentro de 3 horas").
 - `ui/deshacer.tsx`: `ofrecerDeshacer({ mensaje, deshacer?, confirmar?, ocultar? })` muestra la barra "Deshacer" del shell durante 10 s (también Ctrl+Z). Las acciones diferidas (`confirmar`) se ejecutan al vencer el plazo o al pasar la app a segundo plano.

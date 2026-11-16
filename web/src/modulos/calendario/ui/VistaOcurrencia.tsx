@@ -13,7 +13,8 @@ import { cancelarOcurrencia, desmarcarCumplido, editarOcurrencia, eliminarEvento
 import { esClaveDeOcurrencia, HORAS_PARA_CUMPLIR, type EventoDeCalendario } from '../dominio/evento';
 import { instanciar } from '../dominio/expansion';
 import { aDatosDeOcurrencia, borradorDesde, FormularioEvento, textoDeRecordatorio } from './FormularioEvento';
-import { fechas, horarioDe, LineaDeAviso, Marcas, mensajeDeError, rutaDeVista, type Aviso } from './comun';
+import { atributosDeColor } from '../../../ui/color';
+import { fechas, horarioDe, LineaDeAviso, LineaDeVinculo, Marcas, mensajeDeError, rutaDeVista, type Aviso } from './comun';
 
 export function VistaOcurrencia({ ctx, params }: PropsDeVista) {
   const id = params.id ?? '';
@@ -91,7 +92,7 @@ function Detalle({ ctx, e, clave }: { ctx: ContextoDeModulo; e: EventoDeCalendar
   const puedeCumplir = e.compromiso && !o.cumplida && ahora >= o.inicioMs && ahora <= o.finMs + HORAS_PARA_CUMPLIR * 3_600_000;
 
   return (
-    <div class="pila" data-color={e.color}>
+    <div class="pila" {...atributosDeColor(e.color)}>
       <article class="tarjeta pila">
         <h2 class="tarjeta__titulo fila__titulo">
           <span class="marca-color" aria-hidden="true" />
@@ -125,6 +126,7 @@ function Detalle({ ctx, e, clave }: { ctx: ContextoDeModulo; e: EventoDeCalendar
             </>
           )}
         </dl>
+        {e.vinculo && <LineaDeVinculo ctx={ctx} vinculo={e.vinculo} />}
 
         {e.compromiso && (
           <div class="pila">

@@ -1,6 +1,6 @@
 /** Errores con nombre del negocio, con clave i18n y campo del formulario si aplica. */
 
-export type CampoDeEvento = 'titulo' | 'lugar' | 'notas' | 'color' | 'inicio' | 'fin' | 'recordatorios' | 'recurrencia' | 'compromiso';
+export type CampoDeEvento = 'titulo' | 'lugar' | 'notas' | 'color' | 'inicio' | 'fin' | 'recordatorios' | 'recurrencia' | 'compromiso' | 'vinculo' | 'duracion' | 'semanas';
 
 export abstract class ErrorDeCalendario extends Error {
   abstract readonly clave: string;
@@ -59,4 +59,8 @@ export class CompromisoInvalido extends definir('CompromisoInvalido', 'calendari
 export class CumplimientoFueraDeTiempo extends definir('CumplimientoFueraDeTiempo', 'calendario.error.cumplimiento') {}
 export class OcurrenciaInexistente extends definir('OcurrenciaInexistente', 'calendario.error.ocurrencia') {}
 export class EventoNoEncontrado extends definir('EventoNoEncontrado', 'calendario.error.eventoNoEncontrado') {}
+export class VinculoInvalido extends definir('VinculoInvalido', 'calendario.error.vinculo', 'vinculo') {}
+export class DuracionDeFichaInvalida extends definir('DuracionDeFichaInvalida', 'calendario.error.ficha.duracion', 'duracion') {}
+export class SemanasDeFichaInvalidas extends definir('SemanasDeFichaInvalidas', 'calendario.error.ficha.semanas', 'semanas') {}
+export class FichaNoEncontrada extends definir('FichaNoEncontrada', 'calendario.error.ficha.noEncontrada') {}
 export class ElementoDeAgendaInvalido extends definir('ElementoDeAgendaInvalido', 'calendario.error.elementoExterno') {}

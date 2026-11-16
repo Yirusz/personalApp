@@ -22,7 +22,7 @@ export function crearEvento(ctx: ContextoDeCasoDeUso, datos: DatosDeEvento): Pro
   return ctx.almacen.escribir([EVENTOS], async (tx) => {
     const e = crear({ ...datos, id: ctx.nuevoId() }, zonaDelUsuario(), ctx.reloj.ahora());
     await tx.poner(EVENTOS, e);
-    tx.publicar(PUBLICADOS.EventoCreado, { eventoId: e.id, recurrente: e.recurrencia !== null, compromiso: e.compromiso });
+    tx.publicar(PUBLICADOS.EventoCreado, { eventoId: e.id, recurrente: e.recurrencia !== null, compromiso: e.compromiso, desdeFicha: e.ficha !== null });
     return e;
   });
 }

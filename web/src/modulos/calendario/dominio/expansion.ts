@@ -56,6 +56,8 @@ export function instanciar(e: EventoDeCalendario, clave: string, zona: Zona): Oc
     compromiso: e.compromiso,
     cumplida: e.cumplidas.includes(clave),
     recordatorios: e.recordatorios,
+    vinculo: e.vinculo ?? null,
+    ficha: e.ficha ?? null,
   };
 }
 

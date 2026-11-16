@@ -18,6 +18,8 @@ export function esColorCategorico(valor: unknown): valor is ColorCategorico {
   return typeof valor === 'string' && (COLORES_CATEGORICOS as readonly string[]).includes(valor);
 }
 
+import type { ColorDeAgenda } from './color';
+
 export interface ElementoDeAgenda {
   /** Id estable del elemento en su módulo de origen. */
   id: string;
@@ -29,8 +31,8 @@ export interface ElementoDeAgenda {
   todoElDia?: boolean;
   tipo: TipoDeElementoDeAgenda;
   estado: EstadoDeElementoDeAgenda;
-  /** Token de color (no hex). */
-  color?: ColorCategorico;
+  /** Token de la paleta o `#rrggbb` (ADR-0015; el Calendario lo vuelve legible en ambos temas). */
+  color?: ColorDeAgenda;
   /** Ruta interna para abrir el elemento en su módulo (p. ej. `/universidad/trabajos/<id>`). */
   ruta?: string;
 }

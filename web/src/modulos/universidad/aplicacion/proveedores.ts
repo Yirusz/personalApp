@@ -1,10 +1,12 @@
 /**
  * Integración por consulta (ADR-0013): Universidad ofrece, leyendo SOLO su almacén,
  * - una fuente de calendario con las fechas de entrega, y
- * - un proveedor de referencias de materias y trabajos (para Estudio y Notas).
+ * - un proveedor de referencias de materias y trabajos (para Estudio y Notas), y
+ * - una ficha por materia activa para cargar el horario de clases (ADR-0015).
  * Nadie importa este módulo: el núcleo los expone en `ctx.integraciones`.
  */
 import type { ContextoDeModulo, Proveedores, ReferenciaDeEntidad } from '../../../nucleo/contrato';
+import { FICHA_SEMANAS_POR_DEFECTO, type FichaDeCalendario } from '../../../nucleo/dominio/fichas';
 import type { Materia } from '../dominio/materia';
 import { elementoDeAgenda, esActivo, trabajoDesdeAlmacen, type Trabajo } from '../dominio/trabajo';
 import { INDICE_POR_VENCIMIENTO, listarMaterias, MATERIAS, TRABAJOS } from './comun';
@@ -20,6 +22,21 @@ export function referenciaDeMateria(m: Materia): ReferenciaDeEntidad {
 
 export function referenciaDeTrabajo(t: Trabajo, m: Materia | undefined): ReferenciaDeEntidad {
   return { tipo: TIPO_TRABAJO, id: t.id, titulo: t.titulo, ...(m ? { detalle: m.nombre, color: m.color } : {}), ruta: `/universidad/trabajos/${t.id}`, activa: esActivo(t.estado) };
+}
+
+/** Una clase: 2 h semanales durante el semestre (todo editable en el evento que crea). */
+export const DURACION_DE_CLASE_MIN = 120;
+
+export function fichaDeMateria(m: Materia): FichaDeCalendario {
+  return {
+    id: m.id,
+    titulo: m.nombre,
+    detalle: [m.periodo, m.profesor].filter(Boolean).join(' · '),
+    color: m.color,
+    duracionMin: DURACION_DE_CLASE_MIN,
+    repeticion: { tipo: 'semanal', semanas: FICHA_SEMANAS_POR_DEFECTO },
+    vinculo: { tipo: TIPO_MATERIA, id: m.id },
+  };
 }
 
 export function crearProveedores(ctx: Pick<ContextoDeModulo, 'almacen'>): Proveedores {
@@ -42,6 +59,11 @@ export function crearProveedores(ctx: Pick<ContextoDeModulo, 'almacen'>): Provee
           }),
       },
     ],
+    fichas: {
+      nombre: 'universidad.fichas',
+      fichas: () => ctx.almacen.leer([MATERIAS], async (tx) => (await listarMaterias(tx)).filter((m) => !m.archivada).map(fichaDeMateria)),
+      alCambiar: (escucha) => ctx.almacen.alCambiar([MATERIAS], escucha),
+    },
     referencias: {
       tipos: [TIPO_MATERIA, TIPO_TRABAJO],
       alCambiar,

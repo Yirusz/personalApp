@@ -1,5 +1,5 @@
 import type { Migracion } from '../../../nucleo/contrato';
-import { AGENDA, AVISOS, EVENTOS, INDICE_POR_UID, REVISIONES } from '../aplicacion/comun';
+import { AGENDA, AVISOS, EVENTOS, FICHAS, INDICE_POR_UID, REVISIONES } from '../aplicacion/comun';
 
 /** Una migración publicada NUNCA se edita: los cambios de esquema se agregan como versión 2, 3… */
 export const MIGRACIONES: readonly Migracion[] = [
@@ -12,6 +12,13 @@ export const MIGRACIONES: readonly Migracion[] = [
       ctx.crearAlmacen(AGENDA, { clave: 'clave' });
       ctx.crearAlmacen(AVISOS, { clave: 'clave' });
       ctx.crearAlmacen(REVISIONES, { clave: 'semana' });
+    },
+  },
+  {
+    version: 2,
+    descripcion: 'Fichas propias (ADR-0015). Los eventos existentes no cambian: vínculo y ficha son opcionales.',
+    aplicar(ctx) {
+      ctx.crearAlmacen(FICHAS);
     },
   },
 ];
