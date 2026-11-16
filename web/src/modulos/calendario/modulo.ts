@@ -28,6 +28,7 @@ export default definirModulo({
     { patron: '/calendario/ver/:vista/:fecha', titulo: 'calendario.titulo', vista: () => import('./ui/VistaCalendario').then((m) => m.VistaCalendario) },
     { patron: '/calendario/nuevo', titulo: 'calendario.tituloNuevo', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaNuevoEvento) },
     { patron: '/calendario/nuevo/:inicio', titulo: 'calendario.tituloNuevo', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaNuevoEvento) },
+    { patron: '/calendario/nuevo/:inicio/:fin', titulo: 'calendario.tituloNuevo', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaNuevoEvento) },
     { patron: '/calendario/eventos/:id', titulo: 'calendario.tituloEvento', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaEditarEvento) },
     { patron: '/calendario/eventos/:id/:ocurrencia', titulo: 'calendario.tituloOcurrencia', vista: () => import('./ui/VistaOcurrencia').then((m) => m.VistaOcurrencia) },
     { patron: '/calendario/fichas', titulo: 'calendario.tituloFichas', vista: () => import('./ui/VistaFichas').then((m) => m.VistaFichas) },

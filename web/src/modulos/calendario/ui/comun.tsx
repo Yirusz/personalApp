@@ -1,7 +1,11 @@
 /** Piezas de UI compartidas por las pantallas del Calendario. */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import type { ContextoDeModulo } from '../../../nucleo/contrato';
+import type { ContextoDeModulo, ReferenciaDeEntidad, ResultadoDeFichas } from '../../../nucleo/contrato';
+import { COLORES_CATEGORICOS } from '../../../nucleo/dominio/agenda';
+import { esColorHex, type ColorDeAgenda } from '../../../nucleo/dominio/color';
+import type { Vinculo } from '../../../nucleo/dominio/fichas';
+import { atributosDeColor } from '../../../ui/color';
 import type { Traductor } from '../../../nucleo/i18n/traductor';
 import { useOcultoPorDeshacer } from '../../../ui/deshacer';
 import { hrefDe } from '../../../ui/enrutador';
@@ -256,7 +260,7 @@ export function FilaDeElemento({ ctx, x }: { ctx: ContextoDeModulo; x: ElementoV
   const tachado = x.hecho || (x.fuente === 'propio' && x.cumplida);
   const titulo = <span class={tachado ? 'tachado' : undefined}>{x.titulo}</span>;
   return (
-    <li class={x.fuente === 'externo' ? 'cal-fila cal-fila--externo' : 'cal-fila'} data-color={x.color}>
+    <li class={x.fuente === 'externo' ? 'cal-fila cal-fila--externo' : 'cal-fila'} {...atributosDeColor(x.color)}>
       <span class="cal-fila__hora texto-tenue">{horarioDe(ctx, x)}</span>
       <span class="cal-fila__titulo">
         <span class="marca-color" aria-hidden="true" />
@@ -298,5 +302,117 @@ export function GarantiasDeAviso({ ctx }: { ctx: ContextoDeModulo }) {
         </ul>
       </details>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Color: paleta + hex libre (H1, ADR-0015)
+// ---------------------------------------------------------------------------
+
+/** Paleta y "otro color" (#rrggbb con el selector nativo). El color hex se vuelve legible solo. */
+export function SelectorDeColor({ ctx, nombre, valor, cambiar, error }: { ctx: ContextoDeModulo; nombre: string; valor: ColorDeAgenda; cambiar: (c: ColorDeAgenda) => void; error?: string }) {
+  const t = ctx.t;
+  const hex = esColorHex(valor);
+  const [ultimoHex, setUltimoHex] = useState<string>(hex ? valor : '#ff7043');
+  return (
+    <fieldset class="grupo grupo--en-linea" aria-describedby={error ? `calendario-${nombre}-error` : undefined}>
+      <legend>{t('calendario.campo.color')}</legend>
+      {COLORES_CATEGORICOS.map((c) => (
+        <label key={c} class="opcion" data-color={c}>
+          <input type="radio" name={`calendario-${nombre}`} checked={valor === c} onChange={() => cambiar(c)} />
+          <span class="marca-color" aria-hidden="true" />
+          {t(`calendario.color.${c}`)}
+        </label>
+      ))}
+      <label class="opcion" {...atributosDeColor(ultimoHex as ColorDeAgenda)}>
+        <input type="radio" name={`calendario-${nombre}`} checked={hex} onChange={() => cambiar(ultimoHex as ColorDeAgenda)} />
+        <span class="marca-color" aria-hidden="true" />
+        {t('calendario.color.otro')}
+      </label>
+      <input
+        type="color"
+        class="cal-color-libre"
+        value={ultimoHex}
+        aria-label={t('calendario.color.elegirOtro')}
+        onInput={(e) => {
+          const v = (e.currentTarget as HTMLInputElement).value.toLowerCase();
+          setUltimoHex(v);
+          cambiar(v as ColorDeAgenda);
+        }}
+      />
+      {hex && <span class="campo__ayuda">{t('calendario.color.otroAyuda', { hex: valor })}</span>}
+      <ErrorDeCampo campo={nombre} error={error} />
+    </fieldset>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fichas y referencias de otros módulos (H8, H9)
+// ---------------------------------------------------------------------------
+
+export function useFichas(ctx: ContextoDeModulo): ResultadoDeFichas | null {
+  const [r, setR] = useState<ResultadoDeFichas | null>(null);
+  const [version, setVersion] = useState(0);
+  useEffect(() => ctx.integraciones.alCambiarFichas(() => setVersion((v) => v + 1)), [ctx.integraciones]);
+  useEffect(() => {
+    let vigente = true;
+    void ctx.integraciones.fichas().then((x) => vigente && setR(x));
+    return () => {
+      vigente = false;
+    };
+  }, [ctx.integraciones, version]);
+  return r;
+}
+
+/** Entidades activas de otros módulos para vincular un evento (materias, trabajos…). */
+export function useReferencias(ctx: ContextoDeModulo, vinculo: Vinculo | null): ReferenciaDeEntidad[] | null {
+  const [lista, setLista] = useState<ReferenciaDeEntidad[] | null>(null);
+  useEffect(() => {
+    let vigente = true;
+    void Promise.all([
+      ctx.integraciones.buscarReferencias({ limite: 200 }),
+      vinculo ? ctx.integraciones.buscarReferencias({ tipo: vinculo.tipo, ids: [vinculo.id], incluirInactivas: true }) : Promise.resolve({ referencias: [] as ReferenciaDeEntidad[] }),
+    ]).then(([activas, actual]) => {
+      if (!vigente) return;
+      const todas = [...actual.referencias, ...activas.referencias];
+      setLista(todas.filter((r, i) => todas.findIndex((x) => x.tipo === r.tipo && x.id === r.id) === i));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [ctx.integraciones, vinculo?.tipo, vinculo?.id]);
+  return lista;
+}
+
+export const claveDeVinculo = (v: Vinculo) => `${v.tipo}|${v.id}`;
+export const vinculoDeClave = (k: string): Vinculo | null => {
+  const i = k.indexOf('|');
+  return i > 0 ? { tipo: k.slice(0, i), id: k.slice(i + 1) } : null;
+};
+
+/** "Vinculado a: Cálculo II" con enlace al módulo dueño (o "ya no existe"). */
+export function LineaDeVinculo({ ctx, vinculo }: { ctx: ContextoDeModulo; vinculo: Vinculo }) {
+  const [ref, setRef] = useState<ReferenciaDeEntidad | null | undefined>(undefined);
+  useEffect(() => {
+    let vigente = true;
+    void ctx.integraciones.buscarReferencias({ tipo: vinculo.tipo, ids: [vinculo.id], incluirInactivas: true }).then((r) => vigente && setRef(r.referencias[0] ?? null));
+    return () => {
+      vigente = false;
+    };
+  }, [vinculo.tipo, vinculo.id]);
+  if (ref === undefined) return null;
+  return (
+    <p class="texto-tenue">
+      {ctx.t('calendario.vinculadoA')}{' '}
+      {ref ? (
+        <>
+          {ref.ruta ? <a href={hrefDe(ref.ruta)}>{ref.titulo}</a> : <strong>{ref.titulo}</strong>}
+          {ref.detalle && ` · ${ref.detalle}`}
+          {!ref.activa && ` (${ctx.t('calendario.vinculoInactivo')})`}
+        </>
+      ) : (
+        ctx.t('calendario.vinculoPerdido')
+      )}
+    </p>
   );
 }

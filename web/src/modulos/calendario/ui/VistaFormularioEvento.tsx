@@ -13,7 +13,7 @@ export function VistaNuevoEvento({ ctx, params }: PropsDeVista) {
   return (
     <FormularioEvento
       ctx={ctx}
-      inicial={borradorNuevo(ctx, params.inicio)}
+      inicial={borradorNuevo(ctx, params.inicio, params.fin)}
       modo="evento"
       textoGuardar={ctx.t('calendario.crear')}
       volverA="/calendario"

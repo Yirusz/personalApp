@@ -8,13 +8,13 @@
  * Reglas:
  * - Un módulo solo ve SUS almacenes (nombres cortos; el núcleo antepone `<id>_`).
  * - Solo publica los eventos que declara en `eventos`, con tipo `<id>.<Nombre>`.
- * - No import type { FichaDeCalendario } from './dominio/fichas';
-importa código de otros módulos (lo verifica `arquitectura.test.ts`).
+ * - No importa código de otros módulos (lo verifica `arquitectura.test.ts`).
  * - Se comunica con los demás por eventos y, por consulta, con proveedores (ADR-0013).
  */
 import type { ColorCategorico, ElementoDeAgenda } from './dominio/agenda';
 import type { ComponentType } from 'preact';
 import type { EventoDeDominio } from './dominio/evento';
+import type { FichaDeCalendario } from './dominio/fichas';
 import type { Reloj } from './dominio/reloj';
 import type { Formatos, Traductor } from './i18n/traductor';
 

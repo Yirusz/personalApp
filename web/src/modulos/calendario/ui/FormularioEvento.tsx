@@ -3,7 +3,8 @@
  * Los datos se revisan aquí para señalar todo lo que falta; el dominio vuelve a validar.
  */
 import { useRef, useState } from 'preact/hooks';
-import { COLORES_CATEGORICOS, type ColorCategorico } from '../../../nucleo/dominio/agenda';
+import type { ColorDeAgenda } from '../../../nucleo/dominio/color';
+import type { FichaDeCalendario, Vinculo } from '../../../nucleo/dominio/fichas';
 import type { ContextoDeModulo } from '../../../nucleo/contrato';
 import { esFechaCivil } from '../../../nucleo/dominio/zona-horaria';
 import { hrefDe } from '../../../ui/enrutador';
@@ -11,13 +12,31 @@ import type { DatosDeEvento, DatosDeOcurrencia, EventoDeCalendario } from '../do
 import { LUGAR_MAX, NOTAS_MAX, RECORDATORIO_MAX_MIN, RECORDATORIOS_MAX, TITULO_MAX } from '../dominio/evento';
 import { diaSemana, DIAS_SEMANA, type DiaSemana } from '../dominio/fechas';
 import { CONTEO_MAX, FRECUENCIAS, INTERVALO_MAX, type Frecuencia } from '../dominio/recurrencia';
-import { aria, Ayuda, Campo, enfocarPrimerError, ErrorDeCampo, GarantiasDeAviso, idDeControl, LineaDeAviso, repartirError, type Aviso, type ErroresDeCampo } from './comun';
+import { claveDeFicha } from '../dominio/ficha';
+import {
+  aria,
+  Ayuda,
+  Campo,
+  claveDeVinculo,
+  enfocarPrimerError,
+  ErrorDeCampo,
+  GarantiasDeAviso,
+  idDeControl,
+  LineaDeAviso,
+  repartirError,
+  SelectorDeColor,
+  useFichas,
+  useReferencias,
+  vinculoDeClave,
+  type Aviso,
+  type ErroresDeCampo,
+} from './comun';
 
 export interface Borrador {
   titulo: string;
   lugar: string;
   notas: string;
-  color: ColorCategorico;
+  color: ColorDeAgenda;
   todoElDia: boolean;
   inicioLocal: string;
   finLocal: string;
@@ -31,6 +50,8 @@ export interface Borrador {
   veces: string;
   recordatorios: number[];
   compromiso: boolean;
+  vinculo: Vinculo | null;
+  ficha: string | null;
 }
 
 const PRESETS = [0, 10, 30, 60, 1440, 10080];
@@ -57,20 +78,25 @@ export function borradorDesde(ctx: ContextoDeModulo, d: DatosDeEvento | (DatosDe
     veces: r?.fin.tipo === 'conteo' ? String(r.fin.veces) : '10',
     recordatorios: [...(d.recordatorios ?? [])],
     compromiso: d.compromiso ?? false,
+    vinculo: d.vinculo ?? null,
+    ficha: d.ficha ?? null,
   };
 }
 
-/** Nuevo evento: en la fecha/hora pedida o en la próxima hora en punto; dura 1 h. */
-export function borradorNuevo(ctx: ContextoDeModulo, inicio?: string): Borrador {
+const PATRON_LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+/** Nuevo evento: en la fecha/hora pedida (o el rango arrastrado) o en la próxima hora en punto; dura 1 h. */
+export function borradorNuevo(ctx: ContextoDeModulo, inicio?: string, finPedido?: string): Borrador {
   const f = ctx.formatos;
   let inicioIso: string | null = null;
-  if (inicio && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(inicio)) inicioIso = f.desdeEntradaLocal(inicio);
+  if (inicio && PATRON_LOCAL.test(inicio)) inicioIso = f.desdeEntradaLocal(inicio);
   else if (inicio && esFechaCivil(inicio)) inicioIso = f.desdeEntradaLocal(`${inicio}T09:00`);
   if (!inicioIso) {
     const ahora = ctx.reloj.ahora().getTime();
     inicioIso = new Date(Math.ceil(ahora / 3_600_000) * 3_600_000).toISOString();
   }
-  const fin = new Date(Date.parse(inicioIso) + 60 * MS_MIN).toISOString();
+  const finArrastrado = finPedido && PATRON_LOCAL.test(finPedido) ? f.desdeEntradaLocal(finPedido) : null;
+  const fin = finArrastrado && Date.parse(finArrastrado) > Date.parse(inicioIso) ? finArrastrado : new Date(Date.parse(inicioIso) + 60 * MS_MIN).toISOString();
   return borradorDesde(ctx, { titulo: '', lugar: '', notas: '', color: 'azul', todoElDia: false, inicio: inicioIso, fin, recordatorios: [10], recurrencia: null, compromiso: false }, false);
 }
 
@@ -123,6 +149,8 @@ export function aDatos(ctx: ContextoDeModulo, b: Borrador): { datos: DatosDeEven
       recordatorios: b.recordatorios,
       recurrencia,
       compromiso: b.compromiso && !b.todoElDia,
+      vinculo: b.vinculo,
+      ficha: b.ficha,
     },
     errores,
   };
@@ -212,6 +240,7 @@ export function FormularioEvento({
 
   return (
     <form ref={formulario} class="tarjeta pila" onSubmit={enviar} noValidate>
+      {esEvento && <UsarFicha ctx={ctx} valor={b.ficha} alElegir={(modulo, f) => cambiar(aplicarFicha(ctx, b, modulo, f))} />}
       <Campo campo="titulo" etiqueta={t('calendario.campo.titulo')} error={errores.titulo}>
         <input value={b.titulo} maxLength={TITULO_MAX} autoComplete="off" onInput={(e) => cambiar({ titulo: valor(e) })} {...aria('titulo', errores.titulo)} />
       </Campo>
@@ -262,16 +291,9 @@ export function FormularioEvento({
 
       {esEvento && (
         <>
-          <fieldset class="grupo grupo--en-linea">
-            <legend>{t('calendario.campo.color')}</legend>
-            {COLORES_CATEGORICOS.map((c) => (
-              <label key={c} class="opcion" data-color={c}>
-                <input type="radio" name="calendario-color" checked={b.color === c} onChange={() => cambiar({ color: c })} />
-                <span class="marca-color" aria-hidden="true" />
-                {t(`calendario.color.${c}`)}
-              </label>
-            ))}
-          </fieldset>
+          <SelectorDeColor ctx={ctx} nombre="color" valor={b.color} cambiar={(color) => cambiar({ color })} error={errores.color} />
+
+          <CampoDeVinculo ctx={ctx} vinculo={b.vinculo} cambiar={(vinculo) => cambiar({ vinculo })} />
 
           <fieldset class="grupo pila" aria-describedby={errores.recurrencia ? 'calendario-recurrencia-error' : undefined}>
             <legend>{t('calendario.campo.repetir')}</legend>
@@ -425,6 +447,83 @@ export function FormularioEvento({
       </div>
       <LineaDeAviso aviso={aviso} />
     </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// H9: usar una ficha (clases de Universidad, fichas propias…) y vincular
+// ---------------------------------------------------------------------------
+
+/** Lo que cambia en el borrador al elegir una ficha: título, color, duración, repetición y vínculo. */
+export function aplicarFicha(ctx: ContextoDeModulo, b: Borrador, modulo: string, f: FichaDeCalendario): Partial<Borrador> {
+  const inicio = ctx.formatos.desdeEntradaLocal(b.inicioLocal) ?? ctx.reloj.ahora().toISOString();
+  const fecha = ctx.formatos.entradaLocal(inicio).slice(0, 10);
+  const semanal = f.repeticion.tipo === 'semanal';
+  return {
+    titulo: f.titulo,
+    color: f.color,
+    todoElDia: false,
+    inicioLocal: ctx.formatos.entradaLocal(inicio),
+    finLocal: ctx.formatos.entradaLocal(new Date(Date.parse(inicio) + f.duracionMin * MS_MIN)),
+    repetir: semanal ? 'semanal' : 'no',
+    intervalo: '1',
+    dias: semanal ? [diaSemana(fecha)] : [],
+    termina: semanal ? 'conteo' : 'nunca',
+    veces: semanal && f.repeticion.tipo === 'semanal' ? String(f.repeticion.semanas) : b.veces,
+    vinculo: f.vinculo ?? null,
+    ficha: claveDeFicha(modulo, f.id),
+  };
+}
+
+function UsarFicha({ ctx, valor, alElegir }: { ctx: ContextoDeModulo; valor: string | null; alElegir: (modulo: string, f: FichaDeCalendario) => void }) {
+  const r = useFichas(ctx);
+  const t = ctx.t;
+  if (!r || r.grupos.every((g) => g.fichas.length === 0)) return null;
+  return (
+    <Campo campo="usar-ficha" etiqueta={t('calendario.usarFicha')} ayuda={t('calendario.usarFichaAyuda')}>
+      <select
+        {...aria('usar-ficha', undefined, true)}
+        value={valor ?? ''}
+        onChange={(e) => {
+          const clave = (e.currentTarget as HTMLSelectElement).value;
+          for (const g of r.grupos) for (const f of g.fichas) if (claveDeFicha(g.modulo, f.id) === clave) alElegir(g.modulo, f);
+        }}
+      >
+        <option value="">{t('calendario.usarFichaNinguna')}</option>
+        {r.grupos
+          .filter((g) => g.fichas.length > 0)
+          .map((g) => (
+            <optgroup key={g.modulo} label={t(g.nombre)}>
+              {g.fichas.map((f) => (
+                <option key={f.id} value={claveDeFicha(g.modulo, f.id)}>
+                  {f.titulo}
+                  {f.detalle ? ` · ${f.detalle}` : ''}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+      </select>
+    </Campo>
+  );
+}
+
+function CampoDeVinculo({ ctx, vinculo, cambiar }: { ctx: ContextoDeModulo; vinculo: Vinculo | null; cambiar: (v: Vinculo | null) => void }) {
+  const lista = useReferencias(ctx, vinculo);
+  const t = ctx.t;
+  if (!lista || (lista.length === 0 && !vinculo)) return null;
+  return (
+    <Campo campo="vinculo" etiqueta={t('calendario.campo.vinculo')} ayuda={t('calendario.campo.vinculoAyuda')}>
+      <select {...aria('vinculo', undefined, true)} value={vinculo ? claveDeVinculo(vinculo) : ''} onChange={(e) => cambiar(vinculoDeClave((e.currentTarget as HTMLSelectElement).value))}>
+        <option value="">{t('calendario.campo.vinculoNinguno')}</option>
+        {lista.map((r) => (
+          <option key={claveDeVinculo(r)} value={claveDeVinculo(r)}>
+            {r.titulo}
+            {r.detalle ? ` · ${r.detalle}` : ''}
+            {r.activa ? '' : ` (${t('calendario.vinculoInactivo')})`}
+          </option>
+        ))}
+      </select>
+    </Campo>
   );
 }
 
