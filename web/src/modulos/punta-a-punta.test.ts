@@ -18,6 +18,8 @@ import { agregarSubtarea, calificarTrabajo, entregarTrabajo, reabrirTrabajo, reg
 import { crearIntegraciones, integracionesVacias } from '../nucleo/aplicacion/integraciones';
 import universidad from './universidad/modulo';
 import calendario from './calendario/modulo';
+import estudio from './estudio/modulo';
+import { iniciarFase, revisar } from './estudio/aplicacion/pomodoro';
 import { combinar, leerFuentes, leerFuentesRegistradas, visiblesEnRango } from './calendario/aplicacion/fuentes';
 import { zonaDelUsuario } from './calendario/aplicacion/comun';
 
@@ -169,5 +171,42 @@ describe('Universidad → fuente registrada → Calendario (por consulta, sin co
     await crearMateria(contexto(e, 'universidad'), { nombre: 'Cálculo II', profesor: '', color: 'azul', periodo: '2026-2', creditos: null });
     expect(integraciones.tiposDeReferencia()).toEqual(['universidad.materia', 'universidad.trabajo']);
     expect((await integraciones.buscarReferencias({ tipo: 'universidad.materia', texto: 'calc' })).referencias.map((r) => r.titulo)).toEqual(['Cálculo II']);
+  });
+});
+
+describe('Estudio → eventos → RPG (tope provisional y día real, ADR-0016)', () => {
+  const MIN = 60_000;
+  async function app() {
+    const e = await crearEntorno([estudio, rpg, calendario, universidad]);
+    for (const s of rpg.suscripciones!(contexto(e, 'rpg'))) e.bus.registrar('rpg', s);
+    await e.bus.iniciar();
+    const ctx = contexto(e, 'estudio');
+    const pomodoro = async () => {
+      await iniciarFase(ctx, { vinculo: null, fase: 'foco' });
+      e.reloj.avanzar(25 * MIN);
+      await revisar(ctx);
+    };
+    const asientos = async () => {
+      await e.bus.procesarPendientes();
+      return e.almacen.paraModulo('rpg').leer(['registro'], (tx) => leerUltimosAsientos(tx, 50));
+    };
+    return { e, ctx, pomodoro, asientos };
+  }
+
+  it('10 XP por Pomodoro con tope de 80 al día (los tramos llegan en la iteración 6)', async () => {
+    const { pomodoro, asientos } = await app();
+    for (let i = 0; i < 9; i++) await pomodoro();
+    const xp = (await asientos()).filter((a) => a.tipo === 'estudio.PomodoroCompletado').map((a) => a.xp);
+    expect(xp.reduce((n, x) => n + x, 0)).toBe(80);
+    expect(xp).toContain(0);
+  });
+
+  it('termina a las 23:50 con Android congelado y se detecta a las 00:10: la XP es del día anterior', async () => {
+    const { e, ctx, asientos } = await app();
+    e.reloj.fijar(new Date('2026-11-17T04:25:00Z')); // lunes 16, 23:25 en Bogotá
+    await iniciarFase(ctx, { vinculo: null });
+    e.reloj.fijar(new Date('2026-11-17T05:10:00Z')); // martes 17, 00:10
+    await revisar(ctx);
+    expect((await asientos()).find((a) => a.tipo === 'estudio.PomodoroCompletado')).toMatchObject({ dia: '2026-11-16', ocurridoEn: '2026-11-17T04:50:00.000Z', xp: 10 });
   });
 });

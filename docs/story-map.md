@@ -621,9 +621,9 @@ Escenario: Dos pestañas
   Entonces se completa y se publica PomodoroCompletado una sola vez
 
 Escenario: Cruzar la medianoche
-  Dado un foco que empieza a las 23:40 (Bogotá) y Android congela la app
+  Dado un foco que empieza a las 23:25 (Bogotá) y Android congela la app
   Cuando vuelvo a las 00:10
-  Entonces el foco cuenta para el día en que terminó (00:05), no para la hora en que volví
+  Entonces el foco figura terminado a las 23:50 y cuenta (estadísticas, XP, tope y racha) para ese día, no para el siguiente
 ```
 
 ### RPG (18 pts)
