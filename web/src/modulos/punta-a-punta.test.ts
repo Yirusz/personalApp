@@ -3,6 +3,7 @@
  * eventos; el RPG (que ese módulo no conoce) los convierte en experiencia según
  * reglas.v1.json. Viven fuera de las carpetas de los módulos porque cruzan varios.
  */
+import { avisadorNulo } from '../nucleo/infraestructura/avisos';
 import { describe, expect, it } from 'vitest';
 import type { ContextoDeModulo } from '../nucleo/contrato';
 import { crearFormatos, crearTraductor } from '../nucleo/i18n/traductor';
@@ -36,6 +37,7 @@ function contexto(e: Entorno, moduloId: string): ContextoDeModulo {
     diagnostico: e.diagnostico,
     notificaciones: notificadorNulo,
     integraciones: integracionesVacias,
+    avisos: avisadorNulo,
     navegar: () => undefined,
   };
 }
@@ -174,7 +176,7 @@ describe('Universidad → fuente registrada → Calendario (por consulta, sin co
   });
 });
 
-describe('Estudio → eventos → RPG (tope provisional y día real, ADR-0016)', () => {
+describe('Estudio → eventos → RPG (tramos y día real, ADR-0016)', () => {
   const MIN = 60_000;
   async function app() {
     const e = await crearEntorno([estudio, rpg, calendario, universidad]);
@@ -193,12 +195,11 @@ describe('Estudio → eventos → RPG (tope provisional y día real, ADR-0016)',
     return { e, ctx, pomodoro, asientos };
   }
 
-  it('10 XP por Pomodoro con tope de 80 al día (los tramos llegan en la iteración 6)', async () => {
+  it('tramos diarios (iteración 6): 8 × 10 y desde el 9.º la mitad', async () => {
     const { pomodoro, asientos } = await app();
     for (let i = 0; i < 9; i++) await pomodoro();
     const xp = (await asientos()).filter((a) => a.tipo === 'estudio.PomodoroCompletado').map((a) => a.xp);
-    expect(xp.reduce((n, x) => n + x, 0)).toBe(80);
-    expect(xp).toContain(0);
+    expect(xp.reverse()).toEqual([10, 10, 10, 10, 10, 10, 10, 10, 5]);
   });
 
   it('termina a las 23:50 con Android congelado y se detecta a las 00:10: la XP es del día anterior', async () => {

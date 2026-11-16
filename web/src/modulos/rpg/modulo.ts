@@ -1,22 +1,35 @@
 import { definirModulo } from '../../nucleo/contrato';
+import { crearZona } from '../../nucleo/dominio/zona-horaria';
+import { ZONA_HORARIA } from '../../nucleo/i18n/traductor';
 import {
+  ALMACEN_AVISOS,
+  ALMACEN_CONTADORES,
+  ALMACEN_DIAS,
+  ALMACEN_LOGROS,
   ALMACEN_PERFIL,
+  ALMACEN_RECOMPENSAS,
   ALMACEN_REGISTRO,
-  EVENTO_NIVEL_ALCANZADO,
+  ALMACEN_SEMANAS,
+  DECLARACIONES,
   INDICE_CLAVE_UNICA,
   INDICE_TIPO_DIA,
-  crearSuscripcionDeExperiencia,
-} from './aplicacion/registrar-experiencia';
-import { validarConfiguracion } from './dominio/reglas';
-import reglasV1 from './reglas.v1.json';
+} from './aplicacion/almacenes';
+import { crearSuscripcionDeExperiencia } from './aplicacion/registrar-experiencia';
+import { iniciarTareasDelRpg } from './aplicacion/tareas';
+import { REGLAS_DEL_RPG } from './dominio/configuracion-activa';
 import textos from './textos.es-CO.json';
 
 /** Se valida al importar: unas reglas inválidas detienen el arranque con un mensaje claro. */
-export const REGLAS = validarConfiguracion(reglasV1);
+export const REGLAS = REGLAS_DEL_RPG;
 
+/**
+ * Módulo Progreso (RPG, iteración 6): libro de experiencia con tramos y racha semanal,
+ * logros y niveles de atributo definidos en configuración, recompensas propias con oro
+ * y avisos. Escucha todos los eventos; nadie lo importa.
+ */
 export default definirModulo({
   id: 'rpg',
-  version: '0.2.0',
+  version: '0.3.0',
   nombre: 'rpg.nombre',
   textos,
   navegacion: {
@@ -49,10 +62,21 @@ export default definirModulo({
         ctx.crearIndice(ALMACEN_REGISTRO, INDICE_CLAVE_UNICA, 'claveUnica');
       },
     },
+    {
+      version: 3,
+      descripcion: 'Contadores por día, semanas de racha, contadores y logros, recompensas y avisos (iteración 6). Los contadores se rellenan desde el libro al primer evento.',
+      aplicar(ctx) {
+        ctx.crearAlmacen(ALMACEN_DIAS, { clave: 'dia' });
+        ctx.crearAlmacen(ALMACEN_SEMANAS, { clave: 'lunes' });
+        ctx.crearAlmacen(ALMACEN_CONTADORES, { clave: 'clave' });
+        ctx.crearAlmacen(ALMACEN_LOGROS);
+        ctx.crearAlmacen(ALMACEN_RECOMPENSAS);
+        ctx.crearAlmacen(ALMACEN_AVISOS);
+      },
+    },
   ],
-  eventos: {
-    [EVENTO_NIVEL_ALCANZADO]: { version: 1, descripcion: 'El personaje subió de nivel. Datos: nivel, nivelAnterior.' },
-  },
-  suscripciones: (ctx) => [crearSuscripcionDeExperiencia(REGLAS, (instante) => ctx.formatos.diaLocal(instante))],
+  eventos: DECLARACIONES,
+  suscripciones: () => [crearSuscripcionDeExperiencia(REGLAS_DEL_RPG, crearZona(ZONA_HORARIA))],
+  alIniciar: iniciarTareasDelRpg,
   tarjetasDeInicio: [{ orden: 0, vista: () => import('./ui/TarjetaProgreso').then((m) => m.TarjetaProgreso) }],
 });
