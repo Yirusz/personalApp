@@ -22,7 +22,7 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 | `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día · saltar un descanso no publica | ✅ iteración 5 |
 | `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | ✅ iteración 2 |
 | `calendario.EventoMarcadoCumplido` | 15 | Disciplina | Solo bloques de compromiso (15 min–8 h), marcables desde que empiezan hasta 48 h después · una vez por `ocurrenciaId` · máx. 45 XP/día | ✅ iteración 2 |
-| `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | "una vez" ✅ · racha en iteración RPG |
+| `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | ✅ |
 | `estudio.PomodoroInterrumpido`, `calendario.Evento*`, `universidad.Materia{Editada,Archivada,Restaurada}`, `Trabajo{Editado,Iniciado,Reprogramado,Cancelado,Reabierto,Eliminado}`, subtareas (no publican eventos) | 0 | — | Sin regla = sin XP (evita farmeo) | ✅ |
 
 **Por qué por tipo y no por talla (ADR-0014):** el tipo lo fija el programa de la materia, no una autoevaluación. Partir un proyecto (80) en 4 tareas (40) pierde; el peso alto (≥ 20 %) da ×1,25 sin depender de que se declare. Ejemplo: parcial a tiempo que vale 25 % → 50 × 1,2 × 1,25 = **75 XP**. Un trabajo creado y entregado en menos de 10 min no da nada; las subtareas nunca dan XP.
@@ -39,16 +39,16 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 
 Con un día típico (~4 Pomodoros + 1 taller a tiempo = 40 + 24 ≈ 64 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
 
-**Orden de cálculo de un asiento** (función pura `calcularXp` en `modulos/rpg/dominio/reglas.ts`; los pasos 4 y 5 llegan en la iteración RPG):
-1. Base: `xp`, `xpPorTalla[talla]` o `xpPorValor.valores[datos[campo]]` (valor desconocido → 0). Exactamente una de las tres.
+**Orden de cálculo de un asiento** (función pura `calcularXp` en `modulos/rpg/dominio/reglas.ts`; completa desde la iteración 6):
+1. Base: `xp`, `xpPorTalla[talla]`, `xpPorValor.valores[datos[campo]]` (valor desconocido → 0) o `xpDesdeDato` (solo eventos `rpg.*`, p. ej. el XP de un logro). Exactamente una.
 2. Condiciones: `minMinutosDesdeCreacion`, `minAntelacionHoras`, `unaVezPor` → si no se cumplen, 0.
 3. Puntualidad: × `multiplicadorPuntual` si `aTiempo`; luego × `bonoPorUmbral.multiplicador` si `datos[campo] ≥ minimo` (genérico; hoy: peso ≥ 200 décimas de %).
-4. Tramos diarios por cantidad (`tramosDiarios`).
-5. Racha: × (1 + min(0,05 · semanas, 0,30)), salvo `sinMultiplicadorDeRacha`.
+4. Tramos diarios por cantidad (`tramosDiarios`): el evento n.º *k* del día local usa el factor de su tramo. Pomodoros: 1–8 × 1, 9–12 × 0,5, 13+ × 0 (12 = 100 XP). Reemplazó el tope provisional de 80 de la 0.6.0.
+5. Racha: × (1 + min(0,05 · semanas, 0,30)) con la racha **que regía en la semana del evento** (la que quedó al cerrar la semana anterior), salvo `sinMultiplicadorDeRacha`. Un evento atrasado no se beneficia de una racha posterior.
 6. Tope diario: `min(xp, limiteDiarioXp − acumuladoHoyDelTipo)`, nunca negativo.
 7. Redondeo hacia abajo a entero.
 
-Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-diario`, `ya-otorgado` (unaVezPor), `muy-rapido` (minMinutosDesdeCreacion) o `poca-antelacion` (minAntelacionHoras). Un dato que falta en el evento no se adivina: la condición se considera no cumplida (0 XP). "Una vez por" cuenta solo asientos que dieron XP: si el primero dio 0 (p. ej. por el tope diario), uno posterior sí puede premiar.
+Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-diario`, `ya-otorgado` (unaVezPor), `muy-rapido` (minMinutosDesdeCreacion) `poca-antelacion` (minAntelacionHoras) o `tramo-reducido` (tramosDiarios). Un dato que falta en el evento no se adivina: la condición se considera no cumplida (0 XP). "Una vez por" cuenta solo asientos que dieron XP: si el primero dio 0 (p. ej. por el tope diario), uno posterior sí puede premiar.
 
 **Oro:** oro disponible = ⌊XP total / 10⌋ − oro gastado. Se gasta en recompensas que define el usuario (con costo en oro). La XP no se gasta.
 
@@ -57,6 +57,8 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 - Cada semana cumplida consecutiva suma +5 % de multiplicador (tope +30 %) y da 50 XP.
 - **Comodín:** se gana 1 por cada 4 semanas cumplidas (máximo 2); se consume automáticamente para salvar una semana no cumplida.
 - Sin comodines, la racha vuelve a 0. **No se pierde XP, nivel ni oro.**
+- **Cómo se evalúa (iteración 6, ADR-0017):** semana = lunes a domingo en Bogotá; cierra el **lunes 00:00, sin gracia**. Un evento cuenta como actividad de su semana solo si se **registró** (hora de publicación, del UUIDv7 del evento) antes de ese cierre: un Pomodoro que terminó el domingo 23:50 y se detectó el lunes 00:10 da su XP el domingo, pero no cuenta para la racha. No hay temporizadores: la suscripción del RPG evalúa, en orden, todas las semanas cerradas antes del evento que procesa; al abrir la app, si hay semanas cerradas pendientes, publica `rpg.SemanasCerradas` para que se evalúen en el mismo orden del registro. Resultado determinista: evaluar el martes o tres semanas después da lo mismo.
+- Eventos: `SemanaDeRachaCumplida` (con `ocurridoEn` = domingo 23:59:59,999), `ComodinGanado`, `ComodinUsado`, `RachaPerdida`.
 
 ## 5. Atributos
 | Atributo | Qué refleja | Fuentes v1 |
@@ -64,7 +66,9 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 | Intelecto | Estudio enfocado | Pomodoros |
 | Disciplina | Cumplir lo prometido | Trabajos entregados, bloques de compromiso, rachas |
 | Organización | Planear con anticipación | Materias, trabajos registrados con ≥ 48 h, revisión semanal, notas registradas |
-| Bienestar | Ritmo sostenible | Descansos completados; el tope de Pomodoros evita premiar jornadas excesivas |
+| Bienestar | Ritmo sostenible | Descansos completados; los tramos de Pomodoros evitan premiar jornadas excesivas |
+
+**Nivel de cada atributo (R6, iteración 6):** misma fórmula que el nivel general con `nivelDeAtributo` = base 50, exponente 1,5 (100 XP → nivel 2, 141 → 3). Al subir se publica `rpg.NivelDeAtributoAlcanzado {atributo, nivel}` y aparece en el aviso.
 
 ## 6. Logros v1 (iteración 6; definidos en `reglas.v1.json`)
 | Logro | Condición | XP |
@@ -75,7 +79,13 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 | Constancia | 4 semanas de racha seguidas | 100 |
 | Maratón sano | 8 Pomodoros y 4 descansos completados en un mismo día de Bogotá | 30 |
 
+Cómo funcionan: `contadores` (evento, filtro `donde` por igualdad sobre los datos, `unaVezPor` entidad) y `logros` (condiciones `contador` + `minimo` con ámbito `total` o `dia`, o `racha`). Los contadores se actualizan en la misma transacción que el asiento (nunca se recorre el libro por evento). Un logro se desbloquea una sola vez y publica `rpg.LogroDesbloqueado {logroId, xp}`; la regla de ese evento da la XP (`xpDesdeDato: "xp"`, Disciplina, sin multiplicador). Al actualizar desde la 0.6 los contadores se rellenan una vez desde el libro; los que filtran por datos (`Puntual`) empiezan en 0 porque el libro no guarda los datos de los eventos.
+
+**Avisos (R5):** nivel, nivel de atributo y logros se guardan como avisos pendientes y se muestran agrupados en uno solo ("2 logros: Primer foco y Puntual"), arriba de la pantalla, 5 s o hasta Escape, anunciado por `aria-live`; sin animación con `prefers-reduced-motion`.
+
+**Recompensas (R4):** propias (nombre ≤ 60, costo 1–100 000 de oro), editables y archivables (con deshacer). Canjear escribe un asiento de oro gastado en el libro y publica `rpg.RecompensaCanjeada`; no se puede canjear sin oro suficiente. Deshacer (10 s) anula el canje con un asiento que devuelve el oro (`rpg.CanjeAnulado`); el libro nunca se borra.
+
 ## 7. Cómo cambiar las reglas
 1. Editar `reglas.v1.json` (la app valida al arrancar y muestra los problemas si algo está mal).
 2. `npm run check` (la prueba `rpg-dominio.test.ts` valida el archivo).
-3. Si el cambio debe aplicarse al pasado: en la iteración RPG se agregará "Recalcular XP" (posible porque el registro de eventos se conserva).
+3. Si el cambio debe aplicarse al pasado: "Recalcular XP" queda para R8 (decisión del usuario en la iteración 6); es posible porque el registro de eventos se conserva.
