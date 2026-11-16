@@ -37,7 +37,7 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 |---|---|---|---|---|---|
 | XP acumulada | 100 | 282 | 800 | 2 700 | 8 281 |
 
-Con un día típico (~4 Pomodoros + 1 taller a tiempo ≈ 60–70 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
+Con un día típico (~4 Pomodoros + 1 taller a tiempo = 40 + 24 ≈ 64 XP), el nivel 10 llega en unas 4 semanas y el 20 en unos 3 meses.
 
 **Orden de cálculo de un asiento** (función pura `calcularXp` en `modulos/rpg/dominio/reglas.ts`; los pasos 4 y 5 llegan en la iteración RPG):
 1. Base: `xp`, `xpPorTalla[talla]` o `xpPorValor.valores[datos[campo]]` (valor desconocido → 0). Exactamente una de las tres.
@@ -63,17 +63,17 @@ Cada asiento con XP reducida guarda una **nota** visible en Progreso: `limite-di
 |---|---|---|
 | Intelecto | Estudio enfocado | Pomodoros |
 | Disciplina | Cumplir lo prometido | Trabajos entregados, bloques de compromiso, rachas |
-| Organización | Planear con anticipación | Materias, entregables registrados con tiempo, revisión semanal |
+| Organización | Planear con anticipación | Materias, trabajos registrados con ≥ 48 h, revisión semanal, notas registradas |
 | Bienestar | Ritmo sostenible | Descansos completados; el tope de Pomodoros evita premiar jornadas excesivas |
 
-## 6. Logros v1 (iteración RPG)
+## 6. Logros v1 (iteración 6; definidos en `reglas.v1.json`)
 | Logro | Condición | XP |
 |---|---|---|
-| Primer foco | 1.er Pomodoro completado | 10 |
-| Semestre en marcha | 5 materias creadas | 10 |
-| Puntual | 10 entregables completados a tiempo | 50 |
+| Primer foco | 1.er Pomodoro completado (`estudio.PomodoroCompletado`) | 10 |
+| Semestre en marcha | 5 materias creadas (`universidad.MateriaCreada`) | 10 |
+| Puntual | 10 trabajos distintos entregados a tiempo (`universidad.TrabajoEntregado` con `aTiempo`; reabrir y volver a entregar no suma) | 50 |
 | Constancia | 4 semanas de racha seguidas | 100 |
-| Maratón sano | 8 Pomodoros y 4 descansos en un mismo día | 30 |
+| Maratón sano | 8 Pomodoros y 4 descansos completados en un mismo día de Bogotá | 30 |
 
 ## 7. Cómo cambiar las reglas
 1. Editar `reglas.v1.json` (la app valida al arrancar y muestra los problemas si algo está mal).
