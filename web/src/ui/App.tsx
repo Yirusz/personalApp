@@ -6,6 +6,7 @@ import type { ComponentType, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ControlDeActualizacion } from '../nucleo/infraestructura/service-worker';
 import { Icono, VistaDiferida } from './componentes';
+import { BarraDeAvisos } from './avisos';
 import { BarraDeshacer } from './deshacer';
 import { coincidir, hrefDe, llegoPorReemplazo, navegar, useRuta } from './enrutador';
 import { ICONOS } from './iconos';
@@ -169,6 +170,7 @@ export function App({ shell }: { shell: EstadoDelShell }) {
         {resuelta.render()}
       </main>
       <BarraDeshacer />
+      <BarraDeAvisos />
     </div>
   );
 }

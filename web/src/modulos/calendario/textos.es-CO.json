@@ -277,5 +277,15 @@
   "calendario.color.muestra.pizarra": "Pizarra",
   "calendario.fichas.arrastrar": "Arrástrala a la vista o tócala y luego toca un hueco",
   "calendario.fichas.instruccionMes": "Arrastra «{titulo}» a un día (o tócalo) para elegir la hora.",
-  "calendario.fichas.elegirHora": "Elige la hora: toca un hueco o arrastra «{titulo}» hasta él."
+  "calendario.fichas.elegirHora": "Elige la hora: toca un hueco o arrastra «{titulo}» hasta él.",
+  "calendario.evento.EventoCreado": "Evento creado",
+  "calendario.evento.EventoEditado": "Evento editado",
+  "calendario.evento.EventoEliminado": "Evento eliminado",
+  "calendario.evento.OcurrenciaModificada": "Ocurrencia modificada",
+  "calendario.evento.EventoMarcadoCumplido": "Bloque de compromiso cumplido",
+  "calendario.evento.CalendarioImportado": "Calendario importado",
+  "calendario.evento.SemanaPlanificada": "Semana planificada",
+  "calendario.evento.FichaCreada": "Ficha creada",
+  "calendario.evento.FichaEditada": "Ficha editada",
+  "calendario.evento.FichaEliminada": "Ficha eliminada"
 }

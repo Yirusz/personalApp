@@ -202,6 +202,17 @@ export interface Notificador {
   mostrar(aviso: { titulo: string; cuerpo?: string; etiqueta?: string }): Promise<boolean>;
 }
 
+/** Aviso breve del shell (p. ej. "¡Nivel 3!"): se cierra solo en 5 s o con Escape; se anuncia por aria-live. */
+export interface AvisoDelShell {
+  titulo: string;
+  detalle?: string;
+  icono?: string;
+}
+
+export interface Avisador {
+  mostrar(aviso: AvisoDelShell): void;
+}
+
 export interface ContextoDeModulo {
   readonly moduloId: string;
   readonly almacen: AlmacenDeModulo;
@@ -214,6 +225,8 @@ export interface ContextoDeModulo {
   readonly notificaciones: Notificador;
   /** Proveedores de otros módulos (ADR-0013). */
   readonly integraciones: Integraciones;
+  /** Avisos breves del shell, en cualquier pantalla (R5). */
+  readonly avisos: Avisador;
   /** Con `reemplazar` no se agrega una entrada al historial. */
   navegar(ruta: string, opciones?: { reemplazar?: boolean }): void;
 }

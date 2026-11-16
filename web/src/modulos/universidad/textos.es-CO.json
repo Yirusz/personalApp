@@ -6,13 +6,11 @@
   "universidad.tituloTrabajo": "Trabajo",
   "universidad.fuenteCalendario": "entregas de Universidad",
   "universidad.fichas": "Clases (Universidad)",
-
   "universidad.registrarTrabajo": "Registrar trabajo",
   "universidad.verMaterias": "Materias",
   "universidad.volver": "Volver a Universidad",
   "universidad.sinMaterias": "Aún no tienes materias. Créalas para registrar tus trabajos.",
   "universidad.crearMaterias": "Crear materias",
-
   "universidad.proximas": "Próximas entregas",
   "universidad.proximasVacio": "No tienes entregas pendientes. 🎉",
   "universidad.indicador.vencido": "Vencido",
@@ -32,7 +30,6 @@
   "universidad.filtro.calificado": "Calificados",
   "universidad.filtro.cancelado": "Cancelados",
   "universidad.filtro.todos": "Todos",
-
   "universidad.estado.pendiente": "Pendiente",
   "universidad.estado.enProgreso": "En progreso",
   "universidad.estado.entregado": "Entregado",
@@ -55,7 +52,6 @@
   "universidad.tarde": "tarde",
   "universidad.notaDe": "Nota {nota}",
   "universidad.subtareasDe": "{hechas}/{total} subtareas",
-
   "universidad.accion.iniciar": "Empezar",
   "universidad.accion.entregar": "Marcar entregado",
   "universidad.accion.calificar": "Registrar nota",
@@ -76,7 +72,6 @@
   "universidad.editar": "Editar",
   "universidad.cancelar": "Cancelar",
   "universidad.registradoEn": "Registrado",
-
   "universidad.campo.materia": "Materia",
   "universidad.campo.elegirMateria": "Elige una materia",
   "universidad.campo.titulo": "Título",
@@ -93,14 +88,12 @@
   "universidad.campo.pesoAyuda": "Por ejemplo 20 o 12,5. Un trabajo que vale 20 % o más da más XP.",
   "universidad.campo.nota": "Nota (0,0 a 5,0)",
   "universidad.campo.notaAyuda": "Con un decimal, por ejemplo 3,7.",
-
   "universidad.subtareas": "Subtareas",
   "universidad.subtareasAyuda": "Divide el trabajo en pasos. Las subtareas no dan XP: solo cuenta entregar el trabajo.",
   "universidad.subtareaNueva": "Nueva subtarea",
   "universidad.subtareaAgregar": "Agregar",
   "universidad.subtareaQuitar": "Quitar «{texto}»",
   "universidad.subtareasVacio": "Sin subtareas.",
-
   "universidad.nuevaMateria": "Nueva materia",
   "universidad.editarMateria": "Editar «{nombre}»",
   "universidad.campo.nombre": "Nombre",
@@ -125,7 +118,6 @@
   "universidad.creditos.otro": "{n} créditos",
   "universidad.pendientes.uno": "{n} pendiente",
   "universidad.pendientes.otro": "{n} pendientes",
-
   "universidad.color.verde": "Verde",
   "universidad.color.azul": "Azul",
   "universidad.color.morado": "Morado",
@@ -134,13 +126,11 @@
   "universidad.color.naranja": "Naranja",
   "universidad.color.amarillo": "Amarillo",
   "universidad.color.gris": "Gris",
-
   "universidad.tarjeta.titulo": "Próximas entregas",
   "universidad.tarjeta.nada": "Nada vence en los próximos 7 días. 🎉",
   "universidad.tarjeta.verTodo": "Ver Universidad",
   "universidad.tarjeta.mas.uno": "y {n} más",
   "universidad.tarjeta.mas.otro": "y {n} más",
-
   "universidad.error.vacio": "Este campo es obligatorio.",
   "universidad.error.largo": "Puede tener hasta {max} caracteres.",
   "universidad.error.color": "Elige un color de la lista.",
@@ -158,5 +148,21 @@
   "universidad.error.subtarea.larga": "La subtarea puede tener hasta {max} caracteres.",
   "universidad.error.subtarea.demasiadas": "Máximo {max} subtareas por trabajo.",
   "universidad.error.subtarea.noExiste": "Esa subtarea ya no existe.",
-  "universidad.error.inesperado": "No se pudo guardar. Inténtalo de nuevo."
+  "universidad.error.inesperado": "No se pudo guardar. Inténtalo de nuevo.",
+  "universidad.evento.MateriaCreada": "Materia creada",
+  "universidad.evento.MateriaEditada": "Materia editada",
+  "universidad.evento.MateriaArchivada": "Materia archivada",
+  "universidad.evento.MateriaRestaurada": "Materia restaurada",
+  "universidad.evento.MateriaRenombrada": "Materia renombrada",
+  "universidad.evento.TrabajoCreado": "Trabajo registrado",
+  "universidad.evento.TrabajoEditado": "Trabajo editado",
+  "universidad.evento.TrabajoReprogramado": "Trabajo reprogramado",
+  "universidad.evento.TrabajoIniciado": "Trabajo empezado",
+  "universidad.evento.TrabajoEntregado": "Trabajo entregado",
+  "universidad.evento.TrabajoCalificado": "Nota registrada",
+  "universidad.evento.TrabajoCancelado": "Trabajo cancelado",
+  "universidad.evento.TrabajoReabierto": "Trabajo reabierto",
+  "universidad.evento.TrabajoEliminado": "Trabajo eliminado",
+  "universidad.evento.EntregableCreado": "Entregable registrado",
+  "universidad.evento.EntregableCompletado": "Entregable completado"
 }

@@ -8,5 +8,6 @@
   "ejemplo.registrado": "¡Registrado! Revisa tu progreso en Inicio.",
   "ejemplo.vacio": "Aún no hay registros. Crea el primero.",
   "ejemplo.sinTexto": "(sin nota)",
-  "ejemplo.recientes": "Recientes"
+  "ejemplo.recientes": "Recientes",
+  "ejemplo.evento.RegistroCreado": "Registro de ejemplo"
 }

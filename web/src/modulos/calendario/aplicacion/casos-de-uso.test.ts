@@ -2,6 +2,7 @@
  * Casos de uso del Calendario contra IndexedDB en memoria, con el bus real.
  * Todo es local: los escenarios "sin conexión" se cumplen porque nada usa la red.
  */
+import { avisadorNulo } from '../../../nucleo/infraestructura/avisos';
 import { describe, expect, it, vi } from 'vitest';
 import type { AlmacenDeModulo, ContextoDeModulo, Notificador } from '../../../nucleo/contrato';
 import { definirModulo } from '../../../nucleo/contrato';
@@ -64,6 +65,7 @@ async function preparar() {
     diagnostico: e.diagnostico,
     notificaciones,
     integraciones: integracionesVacias,
+    avisos: avisadorNulo,
     navegar: () => undefined,
   });
   for (const m of [calendario, rpg]) for (const s of m.suscripciones!(contexto(m.id))) e.bus.registrar(m.id, s);

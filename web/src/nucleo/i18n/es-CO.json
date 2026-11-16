@@ -6,6 +6,7 @@
   "app.cargando": "Cargando…",
   "app.reintentar": "Reintentar",
   "app.cerrar": "Cerrar",
+  "app.cerrarAviso": "Cerrar aviso",
   "app.deshacer": "Deshacer",
   "app.deshacerFallo": "No se pudo completar la última acción. Revisa Diagnóstico para ver el detalle.",
   "app.errorGenerico": "Algo salió mal.",

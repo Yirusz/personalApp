@@ -444,6 +444,63 @@ a {
   }
 }
 
+/* ---- Avisos breves del shell (R5): arriba, para no chocar con "Deshacer" ---- */
+
+.avisos-shell {
+  position: fixed;
+  inset: var(--espacio-3) var(--espacio-4) auto;
+  z-index: 9;
+  display: grid;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.aviso-shell {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  max-width: 30rem;
+  padding: var(--espacio-2) var(--espacio-2) var(--espacio-2) var(--espacio-4);
+  border: 2px solid var(--color-oro);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  box-shadow: var(--sombra);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aviso-shell {
+    animation: aviso-entra 0.25s ease-out;
+  }
+}
+
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+}
+
+.aviso-shell__icono {
+  font-size: 1.75rem;
+}
+
+.aviso-shell__texto {
+  display: grid;
+  gap: 2px;
+}
+
+.aviso-shell__cerrar {
+  border-color: transparent;
+}
+
+@media (min-width: 720px) {
+  .avisos-shell {
+    inset: var(--espacio-4) var(--espacio-6) auto calc(var(--ancho-nav-lateral) + var(--espacio-6));
+  }
+}
+
 /* ---- Utilidades de formulario y listas (genéricas para módulos) ---- */
 
 .fila {

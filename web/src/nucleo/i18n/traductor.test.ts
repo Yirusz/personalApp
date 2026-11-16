@@ -76,3 +76,14 @@ describe('formatos', () => {
     expect(f.relativo('2026-11-14T14:30:00Z', ahora)).toBe('hace 30 minutos');
   });
 });
+
+describe('existe (para etiquetas opcionales sin registrar faltantes)', () => {
+  it('dice si la clave existe, también en plural, sin avisar de faltantes', () => {
+    const faltantes: string[] = [];
+    const t = crearTraductor({ 'a.uno': 'x', 'a.otro': 'y', b: 'z' }, (c) => faltantes.push(c));
+    expect(t.existe!('b')).toBe(true);
+    expect(t.existe!('a')).toBe(true);
+    expect(t.existe!('c')).toBe(false);
+    expect(faltantes).toEqual([]);
+  });
+});
