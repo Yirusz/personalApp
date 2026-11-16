@@ -17,6 +17,7 @@ flowchart LR
   E -- "PomodoroCompletado, DescansoCompletado" --> P
   C -- "SemanaPlanificada" --> P
   E -. "buscarReferencias<br/>universidad.materia / .trabajo" .-> U
+  C -. "consulta la fuente<br/>estudio.sesiones y su ficha" .-> E
   N -. "buscarReferencias (futuro)" .-> U
 ```
 
@@ -212,56 +213,61 @@ classDiagram
 
 ## 4. Contexto Estudio
 
-**Lenguaje:** *Sesión* (un bloque de foco o descanso), *Fase* (foco, descanso corto, descanso largo), *Ciclo*, *Pausa*.
+**Lenguaje:** *Sesión* (una fase en curso o terminada), *Fase* (foco, descanso corto, descanso largo), *Ciclo* (focos completados desde el último descanso largo), *Pausa*, *Vínculo* (materia o trabajo, por consulta). Implementado en la iteración 5 (`web/src/modulos/estudio/`, ADR-0016).
 
 ```mermaid
 classDiagram
   class ConfiguracionPomodoro {
-    <<Agregado singleton>>
-    +Minutos foco
-    +Minutos descansoCorto
-    +Minutos descansoLargo
-    +int ciclosAntesDeLargo
+    <<Singleton>>
+    +int focoMin
+    +int cortoMin
+    +int largoMin
+    +int largoCada
+    +bool sonido
+    +bool pantallaEncendida
   }
-  class SesionDeEstudio {
-    <<Agregado>>
+  class SesionActiva {
+    <<Agregado (una sola)>>
     +Id id
-    +Id materiaId
     +Fase fase
-    +Instante inicio
-    +Minutos duracionPlaneada
+    +Vinculo? vinculo
+    +int duracionMin
+    +Instante iniciadaEn
     +Pausa[] pausas
-    +EstadoDeSesion estado
-    +Instante fin
-    +restante(ahora) Duracion
+    +finPrevisto(ahora)
+    +restante(ahora)
     +pausar(ahora)
     +reanudar(ahora)
-    +completarSiCorresponde(ahora) PomodoroCompletado
-    +interrumpir(ahora)
+    +completar(ahora) SesionTerminada
+    +interrumpir(ahora) SesionTerminada
+    +saltar(ahora) SesionTerminada
   }
-  class Pausa {
-    <<VO>>
-    +Instante desde
-    +Instante hasta
+  class SesionTerminada {
+    <<Historial>>
+    +Instante finalizadaEn
+    +completada|interrumpida|saltada estado
+    +int minutosEfectivos
+    +Fecha dia
   }
-  class MateriaConocida {
-    <<Proyección>>
-    +Id id
-    +string nombre
-    +string color
-    +bool archivada
+  class Ciclo {
+    <<Singleton>>
+    +int focosEnCiclo
+    +Fase proxima
   }
-  SesionDeEstudio *-- Pausa
-  SesionDeEstudio --> MateriaConocida : materiaId (opcional)
+  SesionActiva *-- Pausa
+  SesionActiva ..> SesionTerminada : termina en
 ```
 
 | Tipo | Elementos |
 |---|---|
-| Agregados | `ConfiguracionPomodoro` (único), `SesionDeEstudio` |
-| Value objects | `Minutos` (foco 5–90, descanso corto 1–30, largo 5–60), `Fase`, `Pausa`, `EstadoDeSesion` (EnCurso, Pausada, Completada, Interrumpida) |
-| Invariantes | **Una sola sesión activa** a la vez. `restante = duracionPlaneada − (ahora − inicio − pausado)`, calculado con el `Reloj` (nunca por "ticks"; ADR-0004). Solo se completa si `restante ≤ 0`, y el fin registrado es `inicio + duración + pausas` (no la hora en que se volvió a la app). Una pausa de más de 15 min interrumpe la sesión. |
-| Proyecciones | `MateriaConocida` (desde eventos de Universidad); estadísticas por día local y materia. |
-| Eventos | `estudio.PomodoroCompletado {sesionId, materiaId?, minutosFoco}` · `PomodoroInterrumpido {sesionId, minutosFoco}` · `DescansoCompletado {sesionId, minutos}` |
+| Agregados | `SesionActiva` (como mucho una; registro `estado/activa`), `Ciclo` y `ConfiguracionPomodoro` (registros únicos), `SesionTerminada` (historial) |
+| Value objects | Minutos: foco 5–90, descanso corto 1–60, largo 1–60, "largo cada" 2–8 focos (enteros); `Fase`; `Pausa {desde, hasta?}`; `Vinculo {tipo, id}` (ADR-0015) |
+| Invariantes | **Una sola sesión activa** (lo verifica el caso de uso en la misma transacción). `finPrevisto = inicio + duración + pausas`; `restante = finPrevisto − ahora` con el `Reloj`; el tic de la UI solo repinta. Se completa solo si venció y no está en pausa, y el fin registrado es `finPrevisto` (no la hora en que se volvió). Completar es una transacción idempotente: con dos pestañas o tras un congelamiento, `PomodoroCompletado` sale una vez. Los descansos no llevan vínculo. Cambiar la configuración no altera la sesión en curso. Las pausas no tienen límite en v1. |
+| Ciclo | Tras un foco completado se propone el corto, o el largo al llegar a `largoCada`; tras el largo se reinicia. Un foco interrumpido no avanza el ciclo; saltar un descanso lleva al foco. |
+| Estadísticas | Cuentan los **focos completados** (minutos efectivos) por **día civil de `finalizadaEn`** en Bogotá; hoy, semana lunes–domingo y reparto por vínculo. Se consultan por el índice `por_dia`. |
+| Eventos (v1) | `estudio.PomodoroCompletado {sesionId, vinculo, minutosFoco, iniciadaEn}` · `PomodoroInterrumpido {sesionId, vinculo, minutosFoco}` (sin XP) · `DescansoCompletado {sesionId, tipo, minutos}` (saltar no publica). Todos con `ocurridoEn` = fin real (ADR-0016). |
+| Proveedores | Fuente de calendario `estudio.sesiones` (focos completados como bloques hechos, con el nombre y color de la materia por consulta; si Universidad falla, "Estudio (Pomodoro)" en morado) y la ficha "Bloque de estudio" (2 h, una vez). |
+| Almacenamiento | Migración v1: `estado` (clave `clave`: activa, ciclo, configuracion) y `sesiones` con índices `por_dia` y `por_fin`. |
 
 ## 5. Contexto Progreso (RPG)
 

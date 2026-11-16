@@ -18,8 +18,8 @@ Fuente de verdad: **`web/src/modulos/rpg/reglas.v1.json`** (configuración, no c
 | `universidad.TrabajoEntregado` | tarea 10 · quiz 15 · taller 20 · exposición 40 · parcial 50 · proyecto 80 | Disciplina | ×1,2 si `aTiempo` · ×1,25 si `peso` ≥ 20 % · 0 si se entrega < 10 min después de crearlo · máx. 300 XP/día · una vez por `trabajoId` (reabrir no da doble premio) | ✅ iteración 3 |
 | `universidad.TrabajoCalificado` | 5 | Organización | Una vez por `trabajoId` (corregir la nota no suma) · máx. 25 XP/día. No depende de la nota: se premia registrar, no sacar buena nota | ✅ iteración 3 |
 | `universidad.EntregableCreado` / `EntregableCompletado` (v1) | 3 / S 10 · M 35 · L 100 | — | Se conservan para recalcular el historial de la iteración 1; ya no se publican | histórico |
-| `estudio.PomodoroCompletado` | 10 | Intelecto | 1.º–8.º del día: 100 % · 9.º–12.º: 50 % · 13.º en adelante: 0 | iteración RPG |
-| `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día | ✅ |
+| `estudio.PomodoroCompletado` | 10 | Intelecto | **Provisional (iteración 5): tope de 80 XP/día** (= 8 Pomodoros). En la iteración 6 (R1) se aplican los tramos: 1.º–8.º del día 100 % · 9.º–12.º 50 % · 13.º en adelante 0. El día es el de `ocurridoEn` = fin real (ADR-0016) | ✅ iteración 5 (tope) · tramos en iteración 6 |
+| `estudio.DescansoCompletado` | 2 | Bienestar | Máx. 24 XP/día · saltar un descanso no publica | ✅ iteración 5 |
 | `calendario.SemanaPlanificada` | 30 | Organización | Una vez por semana ISO | ✅ iteración 2 |
 | `calendario.EventoMarcadoCumplido` | 15 | Disciplina | Solo bloques de compromiso (15 min–8 h), marcables desde que empiezan hasta 48 h después · una vez por `ocurrenciaId` · máx. 45 XP/día | ✅ iteración 2 |
 | `rpg.SemanaDeRachaCumplida` | 50 | Disciplina | Una vez por semana; no se multiplica por la racha | "una vez" ✅ · racha en iteración RPG |

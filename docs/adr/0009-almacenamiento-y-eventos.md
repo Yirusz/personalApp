@@ -1,6 +1,6 @@
 # ADR-0009: Almacenamiento local y eventos de dominio confiables
 
-Estado: aceptado · lectura de datos de otros módulos modificada por ADR-0013
+Estado: aceptado · lectura de datos de otros módulos modificada por ADR-0013 · significado de `ocurridoEn` precisado por ADR-0016
 Fecha: 2026-11-14
 
 ## Contexto
