@@ -1,11 +1,12 @@
 /** Lo que una vista del calendario dibuja: ocurrencias propias o elementos de otros módulos. */
-import type { ColorCategorico } from '../../../nucleo/dominio/agenda';
+import type { ColorDeAgenda } from '../../../nucleo/dominio/color';
+import type { Vinculo } from '../../../nucleo/dominio/fichas';
 
 interface Comun {
   /** Único entre todo lo visible: `<eventoId>|<fecha>` o `<modulo>:<id>`. */
   id: string;
   titulo: string;
-  color?: ColorCategorico;
+  color?: ColorDeAgenda;
   todoElDia: boolean;
   /** Instantes UTC (ms). Todo el día: medianoche local del primer día → medianoche tras el último. */
   inicioMs: number;
@@ -30,6 +31,10 @@ export interface Ocurrencia extends Comun {
   compromiso: boolean;
   cumplida: boolean;
   recordatorios: readonly number[];
+  /** Entidad de otro módulo a la que se vinculó (H9). */
+  vinculo: Vinculo | null;
+  /** `<modulo>:<fichaId>` si se creó con una ficha (para quitarla rápido, H8). */
+  ficha: string | null;
 }
 
 export interface ElementoExterno extends Comun {

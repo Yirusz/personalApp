@@ -8,7 +8,8 @@
  * Reglas:
  * - Un módulo solo ve SUS almacenes (nombres cortos; el núcleo antepone `<id>_`).
  * - Solo publica los eventos que declara en `eventos`, con tipo `<id>.<Nombre>`.
- * - No importa código de otros módulos (lo verifica `arquitectura.test.ts`).
+ * - No import type { FichaDeCalendario } from './dominio/fichas';
+importa código de otros módulos (lo verifica `arquitectura.test.ts`).
  * - Se comunica con los demás por eventos y, por consulta, con proveedores (ADR-0013).
  */
 import type { ColorCategorico, ElementoDeAgenda } from './dominio/agenda';
@@ -139,9 +140,31 @@ export interface ProveedorDeReferencias {
   alCambiar?(escucha: () => void): () => void;
 }
 
+/** Fichas para poner rápido en el calendario (ADR-0015). */
+export interface ProveedorDeFichas {
+  /** Clave i18n del nombre del grupo (p. ej. `universidad.fichas`). */
+  nombre: string;
+  fichas(): Promise<FichaDeCalendario[]>;
+  alCambiar?(escucha: () => void): () => void;
+}
+
 export interface Proveedores {
   fuentesDeCalendario?: readonly FuenteDeCalendario[];
   referencias?: ProveedorDeReferencias;
+  fichas?: ProveedorDeFichas;
+}
+
+export interface GrupoDeFichas {
+  modulo: string;
+  /** Clave i18n. */
+  nombre: string;
+  /** Ya validadas (`normalizarFicha`); las inválidas se omiten y cuentan en `fallos`. */
+  fichas: FichaDeCalendario[];
+}
+
+export interface ResultadoDeFichas {
+  grupos: GrupoDeFichas[];
+  fallos: { modulo: string; nombre: string; omitidas: number; error?: unknown }[];
 }
 
 export interface ResultadoDeReferencias {
@@ -155,6 +178,10 @@ export interface Integraciones {
   fuentesDeCalendario(): readonly { modulo: string; fuente: FuenteDeCalendario }[];
   tiposDeReferencia(): readonly string[];
   buscarReferencias(consulta: ConsultaDeReferencias): Promise<ResultadoDeReferencias>;
+  /** Fichas de todos los módulos (ADR-0015), tolerante a fallos. */
+  fichas(): Promise<ResultadoDeFichas>;
+  /** Avisa cuando cambian las fichas de cualquier módulo. */
+  alCambiarFichas(escucha: () => void): () => void;
 }
 
 export type PermisoDeNotificaciones = 'concedido' | 'denegado' | 'preguntar' | 'no-soportado';

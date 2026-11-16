@@ -9,6 +9,7 @@ export const EVENTOS = 'eventos';
 export const AGENDA = 'agenda';
 export const AVISOS = 'avisos';
 export const REVISIONES = 'revisiones';
+export const FICHAS = 'fichas';
 export const INDICE_POR_UID = 'por_uid';
 
 export const PUBLICADOS = {
@@ -19,10 +20,13 @@ export const PUBLICADOS = {
   EventoMarcadoCumplido: 'calendario.EventoMarcadoCumplido',
   CalendarioImportado: 'calendario.CalendarioImportado',
   SemanaPlanificada: 'calendario.SemanaPlanificada',
+  FichaCreada: 'calendario.FichaCreada',
+  FichaEditada: 'calendario.FichaEditada',
+  FichaEliminada: 'calendario.FichaEliminada',
 } as const;
 
 export const DECLARACIONES: Readonly<Record<string, DeclaracionDeEvento>> = {
-  [PUBLICADOS.EventoCreado]: { version: 1, descripcion: 'Se creó un evento propio. Datos: eventoId, recurrente, compromiso.' },
+  [PUBLICADOS.EventoCreado]: { version: 1, descripcion: 'Se creó un evento propio. Datos: eventoId, recurrente, compromiso, desdeFicha (opcional, desde 0.5.0).' },
   [PUBLICADOS.EventoEditado]: { version: 1, descripcion: 'Se editó un evento o toda su serie. Datos: eventoId.' },
   [PUBLICADOS.EventoEliminado]: { version: 1, descripcion: 'Se eliminó un evento o toda su serie. Datos: eventoId.' },
   [PUBLICADOS.OcurrenciaModificada]: {
@@ -35,6 +39,9 @@ export const DECLARACIONES: Readonly<Record<string, DeclaracionDeEvento>> = {
   },
   [PUBLICADOS.CalendarioImportado]: { version: 1, descripcion: 'Se importó un archivo .ics. Datos: creados, actualizados.' },
   [PUBLICADOS.SemanaPlanificada]: { version: 1, descripcion: 'Se marcó la semana como planificada. Datos: semana (AAAA-Www).' },
+  [PUBLICADOS.FichaCreada]: { version: 1, descripcion: 'Se creó una ficha propia. Datos: fichaId.' },
+  [PUBLICADOS.FichaEditada]: { version: 1, descripcion: 'Se editó una ficha propia. Datos: fichaId.' },
+  [PUBLICADOS.FichaEliminada]: { version: 1, descripcion: 'Se eliminó una ficha propia (los eventos ya creados se conservan). Datos: fichaId.' },
 };
 
 export type ContextoDeCasoDeUso = Pick<ContextoDeModulo, 'almacen' | 'reloj' | 'nuevoId'>;

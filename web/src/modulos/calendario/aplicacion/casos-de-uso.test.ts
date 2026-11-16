@@ -15,7 +15,7 @@ import type { DatosDeEvento, EventoDeCalendario } from '../dominio/evento';
 import { CumplimientoFueraDeTiempo, FinAntesDeInicio } from '../dominio/errores';
 import calendario from '../modulo';
 import textos from '../textos.es-CO.json';
-import { AGENDA, AVISOS, EVENTOS, REVISIONES, zonaDelUsuario, type RegistroDeAgenda } from './comun';
+import { AGENDA, AVISOS, EVENTOS, FICHAS, REVISIONES, zonaDelUsuario, type RegistroDeAgenda } from './comun';
 import {
   cancelarOcurrencia,
   crearEvento,
@@ -30,6 +30,8 @@ import { combinar, leerFuentes, leerFuentesRegistradas, visiblesEnRango, type Id
 import { generarIcs, importarEventos, leerParaExportar, prepararImportacion } from './importar-exportar';
 import { descartarAvisos, leerBandeja, revisarRecordatorios } from './recordatorios';
 import { planificarSemana } from './revision-semanal';
+import { colocarFicha, crearFicha, crearProveedoresDelCalendario, editarFicha, eliminarFicha } from './fichas';
+import { crearIntegraciones } from '../../../nucleo/aplicacion/integraciones';
 
 /** Módulo de prueba que publica elementos de agenda (como lo haría Universidad). */
 const otro = definirModulo({
@@ -149,6 +151,49 @@ describe('CA2 · elementos de otros módulos', () => {
     const dañada = { ...lectura, registros: new Map<IdDeFuente, readonly unknown[]>([...lectura.registros, ['propios', [...lectura.registros.get('propios')!, { basura: true }]]]) };
     const parcial = visiblesEnRango(dañada, rango, zonaDelUsuario());
     expect(parcial.fallos).toEqual([{ fuente: 'propios', nombre: 'calendario.fuente.propios', omitidos: 1 }]);
+  });
+});
+
+describe('Fichas (H8, ADR-0015)', () => {
+  it('ficha propia: crear, editar y eliminar publican eventos sin XP; el Calendario la ofrece por el núcleo', async () => {
+    const { e, ctx, tipos, perfil } = await preparar();
+    const f = await crearFicha(ctx, { titulo: 'Gimnasio', color: '#FF7043', duracionMin: 60, repeticion: { tipo: 'semanal', semanas: 8 } });
+    await editarFicha(ctx, f.id, { titulo: 'Gym', color: 'rojo', duracionMin: 90, repeticion: { tipo: 'unica' } });
+    const integraciones = crearIntegraciones([calendario], () => ctx as ContextoDeModulo);
+    expect((await integraciones.fichas()).grupos).toEqual([{ modulo: 'calendario', nombre: 'calendario.fichasPropias', fichas: [{ id: f.id, titulo: 'Gym', color: 'rojo', duracionMin: 90, repeticion: { tipo: 'unica' } }] }]);
+    await eliminarFicha(ctx, f.id);
+    await eliminarFicha(ctx, f.id); // idempotente (deshacer diferido)
+    expect((await crearProveedoresDelCalendario(ctx).fichas!.fichas())).toEqual([]);
+    expect(tipos).toEqual(['FichaCreada', 'FichaEditada', 'FichaEliminada']);
+    expect(await perfil()).toBe(0);
+    expect(e).toBeDefined();
+  });
+
+  it('poner la ficha de una materia crea la clase semanal vinculada; quitarla borra la serie', async () => {
+    const { ctx, tipos } = await preparar();
+    const ficha = { id: 'm1', titulo: 'Cálculo II', color: 'verde' as const, duracionMin: 120, repeticion: { tipo: 'semanal' as const, semanas: 16 }, vinculo: { tipo: 'universidad.materia', id: 'm1' } };
+    const ev = await colocarFicha(ctx, 'universidad', ficha, zonaDelUsuario().aUtc('2026-11-16', 7 * 60));
+    expect(ev).toMatchObject({ ficha: 'universidad:m1', vinculo: { tipo: 'universidad.materia', id: 'm1' }, recurrencia: { dias: [1], fin: { veces: 16 } } });
+    const semana = { desdeMs: Date.parse('2026-11-16T05:00:00Z'), hastaMs: Date.parse('2026-11-23T05:00:00Z') };
+    const v = visiblesEnRango(await leerFuentes(ctx.almacen), semana, zonaDelUsuario());
+    expect(v.elementos).toMatchObject([{ titulo: 'Cálculo II', ficha: 'universidad:m1', fechaInicio: '2026-11-16' }]);
+    await eliminarEvento(ctx, ev.id);
+    expect(visiblesEnRango(await leerFuentes(ctx.almacen), semana, zonaDelUsuario()).elementos).toEqual([]);
+    expect(tipos).toEqual(['EventoCreado', 'EventoEliminado']);
+  });
+
+  it('migración v2: una base de la 0.4 (esquema v1, sin fichas) sube a v2 y sus eventos siguen igual', async () => {
+    const v1 = { ...calendario, migraciones: calendario.migraciones.slice(0, 1) };
+    const e = await crearEntorno([v1]);
+    // Registro tal como lo guardaba la 0.4: sin vinculo ni ficha.
+    await e.almacen.paraModulo('calendario').escribir([EVENTOS], (tx) =>
+      tx.poner(EVENTOS, { id: 'viejo', uid: 'viejo@ludus', ...datos(), excepciones: {}, cumplidas: [], creadoEn: '2026-11-01T00:00:00.000Z', actualizadoEn: '2026-11-01T00:00:00.000Z' }),
+    );
+    const nuevo = await e.reabrir([calendario]);
+    const almacen = nuevo.almacen.paraModulo('calendario');
+    const v = visiblesEnRango(await leerFuentes(almacen), { desdeMs: Date.parse('2026-11-17T00:00:00Z'), hastaMs: Date.parse('2026-11-18T05:00:00Z') }, zonaDelUsuario());
+    expect(v.elementos[0]).toMatchObject({ titulo: 'Monitoría', vinculo: null, ficha: null });
+    expect(await almacen.leer([FICHAS], (tx) => tx.listar(FICHAS))).toEqual([]);
   });
 });
 

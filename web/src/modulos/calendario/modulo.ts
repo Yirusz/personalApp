@@ -1,18 +1,20 @@
 import { definirModulo } from '../../nucleo/contrato';
 import { DECLARACIONES } from './aplicacion/comun';
+import { crearProveedoresDelCalendario } from './aplicacion/fichas';
 import { crearSuscripcionDeAgenda } from './aplicacion/proyeccion';
 import { iniciarRecordatorios } from './aplicacion/recordatorios';
 import { MIGRACIONES } from './infraestructura/migraciones';
 import textos from './textos.es-CO.json';
 
 /**
- * Módulo Calendario (iteración 2): eventos propios con recurrencia y
+ * Módulo Calendario (iteraciones 2 y 4): eventos propios con recurrencia y
  * recordatorios, vistas agenda/día/semana/mes, elementos de otros módulos
- * (vía `datos.agenda`, sin conocerlos) e importación/exportación .ics.
+ * (fuentes registradas o `datos.agenda`, sin conocerlos), importación/exportación
+ * .ics y fichas para poner y quitar cosas rápido (ADR-0015).
  */
 export default definirModulo({
   id: 'calendario',
-  version: '1.0.0',
+  version: '2.0.0',
   nombre: 'calendario.nombre',
   textos,
   navegacion: {
@@ -28,6 +30,7 @@ export default definirModulo({
     { patron: '/calendario/nuevo/:inicio', titulo: 'calendario.tituloNuevo', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaNuevoEvento) },
     { patron: '/calendario/eventos/:id', titulo: 'calendario.tituloEvento', vista: () => import('./ui/VistaFormularioEvento').then((m) => m.VistaEditarEvento) },
     { patron: '/calendario/eventos/:id/:ocurrencia', titulo: 'calendario.tituloOcurrencia', vista: () => import('./ui/VistaOcurrencia').then((m) => m.VistaOcurrencia) },
+    { patron: '/calendario/fichas', titulo: 'calendario.tituloFichas', vista: () => import('./ui/VistaFichas').then((m) => m.VistaFichas) },
     { patron: '/calendario/ics', titulo: 'calendario.tituloIcs', vista: () => import('./ui/VistaIcs').then((m) => m.VistaIcs) },
   ],
   migraciones: MIGRACIONES,
@@ -35,4 +38,5 @@ export default definirModulo({
   suscripciones: (ctx) => [crearSuscripcionDeAgenda(ctx.diagnostico)],
   tarjetasDeInicio: [{ orden: 5, vista: () => import('./ui/TarjetaCalendario').then((m) => m.TarjetaCalendario) }],
   alIniciar: iniciarRecordatorios,
+  proveedores: crearProveedoresDelCalendario,
 });

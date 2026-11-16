@@ -3,7 +3,8 @@
  * una sola vez, con el contexto del módulo que los ofrece (así solo leen SU
  * almacén). Un proveedor que falla no afecta a los demás.
  */
-import type { ContextoDeModulo, DefinicionDeModulo, Integraciones, Proveedores, ResultadoDeReferencias } from '../contrato';
+import type { ContextoDeModulo, DefinicionDeModulo, Integraciones, Proveedores, ResultadoDeFichas, ResultadoDeReferencias } from '../contrato';
+import { normalizarFicha } from '../dominio/fichas';
 
 export function crearIntegraciones(modulos: readonly DefinicionDeModulo[], contextoDe: (moduloId: string) => ContextoDeModulo): Integraciones {
   let cache: Map<string, Proveedores> | null = null;
@@ -36,6 +37,35 @@ export function crearIntegraciones(modulos: readonly DefinicionDeModulo[], conte
       if (consulta.limite !== undefined) salida.referencias = salida.referencias.slice(0, consulta.limite);
       return salida;
     },
+    async fichas() {
+      const candidatos = [...proveedores()].filter(([, p]) => p.fichas);
+      const resultados = await Promise.allSettled(candidatos.map(([, p]) => p.fichas!.fichas()));
+      const salida: ResultadoDeFichas = { grupos: [], fallos: [] };
+      resultados.forEach((r, i) => {
+        const [modulo, p] = candidatos[i]!;
+        const nombre = p.fichas!.nombre;
+        if (r.status === 'rejected') {
+          salida.fallos.push({ modulo, nombre, omitidas: 0, error: r.reason });
+          return;
+        }
+        const fichas = [];
+        let omitidas = 0;
+        for (const f of r.value) {
+          try {
+            fichas.push(normalizarFicha(f));
+          } catch {
+            omitidas++;
+          }
+        }
+        if (omitidas > 0) salida.fallos.push({ modulo, nombre, omitidas });
+        salida.grupos.push({ modulo, nombre, fichas });
+      });
+      return salida;
+    },
+    alCambiarFichas(escucha) {
+      const dejar = [...proveedores().values()].flatMap((p) => (p.fichas?.alCambiar ? [p.fichas.alCambiar(escucha)] : []));
+      return () => dejar.forEach((d) => d());
+    },
   };
 }
 
@@ -44,4 +74,6 @@ export const integracionesVacias: Integraciones = {
   fuentesDeCalendario: () => [],
   tiposDeReferencia: () => [],
   buscarReferencias: async () => ({ referencias: [], fallos: [] }),
+  fichas: async () => ({ grupos: [], fallos: [] }),
+  alCambiarFichas: () => () => undefined,
 };
