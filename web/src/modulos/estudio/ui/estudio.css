@@ -1,0 +1,237 @@
+/* Estudio: estilos propios del módulo. Prefijo est-. */
+
+.est,
+.est > * {
+  min-width: 0;
+}
+
+/* Temporizador: en el teléfono llena la pantalla para que los botones queden en la zona del pulgar. */
+.est-reloj {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--espacio-3);
+  text-align: center;
+}
+
+@media (max-width: 719px) {
+  .est-reloj {
+    min-height: calc(100dvh - var(--alto-nav-inferior) - 7rem);
+    grid-template-rows: auto auto auto 1fr auto auto auto auto;
+  }
+  .est-acciones {
+    align-self: end;
+  }
+}
+
+.est-reloj[data-fase='foco'] {
+  --est-color: var(--color-acento);
+}
+.est-reloj[data-fase='corto'],
+.est-reloj[data-fase='largo'] {
+  --est-color: var(--color-cat-azul);
+}
+
+.est-fase {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.est-circulo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(72vw, 17rem);
+  aspect-ratio: 1;
+}
+
+.est-circulo svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.est-circulo circle {
+  fill: none;
+  stroke-width: 8;
+}
+
+.est-circulo__fondo {
+  stroke: var(--color-superficie-2);
+}
+
+.est-circulo__avance {
+  stroke: var(--est-color, var(--color-acento));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .est-circulo__avance {
+    transition: none;
+  }
+}
+
+/* Dígitos de ancho fijo: el número no "baila" al cambiar. */
+.est-tiempo {
+  margin: 0;
+  font-size: clamp(3rem, 15vw, 4.5rem);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.est-detalle {
+  margin: 0;
+}
+
+.est-vinculo {
+  width: min(100%, 24rem);
+  text-align: left;
+}
+
+.est-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espacio-2);
+  width: 100%;
+}
+
+.est-principal {
+  flex: 1 1 12rem;
+  max-width: 22rem;
+  min-height: 3.5rem;
+  font-size: 1.125rem;
+}
+
+.est-garantias summary {
+  cursor: pointer;
+}
+
+.est-lista-simple {
+  display: grid;
+  gap: var(--espacio-1);
+  padding-left: 1.25rem;
+}
+
+/* ---- Estadísticas (barras propias) ---- */
+
+.est-cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--espacio-3);
+}
+
+.est-cifras p {
+  margin: 0;
+}
+
+.est-cifra {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.est-subtitulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.est-semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--espacio-2);
+  height: 10rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.est-semana__dia {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  height: 100%;
+  gap: 2px;
+}
+
+.est-semana__valor {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-texto-tenue);
+}
+
+.est-semana__barra {
+  align-self: end;
+  width: min(100%, 2.25rem);
+  height: calc(var(--alto) * 100%);
+  min-height: 2px;
+  border-radius: 0.25rem 0.25rem 0 0;
+  background: var(--color-acento);
+}
+
+.est-semana__etiqueta {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-texto-tenue);
+}
+
+.est-semana__dia--hoy .est-semana__etiqueta {
+  color: var(--color-acento);
+  font-weight: 700;
+}
+
+.est-reparto {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.est-reparto li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--espacio-2);
+}
+
+.est-reparto__nombre {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.est-reparto__barra {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: calc(var(--ancho) * 100%);
+  min-width: 2px;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-cat, var(--color-acento));
+}
+
+.est-reparto__valor {
+  font-variant-numeric: tabular-nums;
+}
+
+.est-tarjeta {
+  font-variant-numeric: tabular-nums;
+}
+
+.est-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--espacio-3);
+}
