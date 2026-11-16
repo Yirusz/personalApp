@@ -46,8 +46,12 @@ export interface TransaccionDeLectura {
 export interface Transaccion extends TransaccionDeLectura {
   poner<T extends object>(almacen: string, valor: T): Promise<void>;
   borrar(almacen: string, clave: Clave): Promise<void>;
-  /** Registra un evento en la bandeja de salida; se entrega a los suscriptores al confirmar. */
-  publicar<D extends Record<string, unknown>>(tipo: string, datos: D): EventoDeDominio<D>;
+  /**
+   * Registra un evento en la bandeja de salida; se entrega a los suscriptores al confirmar.
+   * `ocurridoEn` (ADR-0016): cuándo pasó el hecho si fue antes de publicarlo (p. ej. un
+   * Pomodoro que terminó mientras Android congelaba la app). Nunca en el futuro.
+   */
+  publicar<D extends Record<string, unknown>>(tipo: string, datos: D, opciones?: { ocurridoEn?: string }): EventoDeDominio<D>;
 }
 
 export interface AlmacenDeModulo {

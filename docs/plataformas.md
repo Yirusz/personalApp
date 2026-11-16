@@ -94,3 +94,17 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 7. **Vistas:** Día muestra "LUN 16" y las 24 horas desplazando; Mes: barras rellenas para todo el día (continuas entre días) y "● 7:00 título" para lo que tiene hora.
 8. **Color:** "+ Nuevo evento" → Color → "Otro": el selector aparece en la página (sin ventana). Probar el área con mouse/dedo y con flechas, la barra de tono, escribir #e65100 y los colores rápidos. En tema oscuro el color se aclara para leerse.
 9. **Formulario con ficha y vínculo, sin conexión, recordatorios e .ics:** igual que en la 0.5.0.
+
+### Iteración 5 — Estudio (guion de prueba manual, ~15 min por entorno)
+1. **Vacío:** Estudio muestra 25:00, "Siguiente: foco de 25 min" y "Aún no has estudiado esta semana" con "Empezar un Pomodoro".
+2. **Vínculo:** con materias en Universidad, "Estudiar para" lista Materias y Trabajos pendientes. Elegir "Cálculo II" → "▶ Iniciar foco". El anillo avanza y la pestaña dice "24:59 · Estudio · Ludus" (escritorio).
+3. **Pausar/reanudar:** pausar 1 min y reanudar → "Termina a las…" se corre 1 min.
+4. **Recargar:** con el foco en curso, recargar (F5 o deslizar): el tiempo sigue correcto.
+5. **Aviso con la app visible:** en Ajustes poner foco 5 min (el mínimo) y dar permiso de notificaciones. Al terminar: tono, vibración (Android) y notificación. Sin permiso, solo tono y el aviso en pantalla.
+6. **Congelamiento (Android, A56 y Tab S10 FE):** iniciar un foco de 5 min, bloquear la pantalla 8 min y volver: figura "Foco terminado a las …" con la hora exacta del fin (inicio + 5 min), sin tono tardío, y suma una sola vez en Progreso.
+7. **Dos pestañas (escritorio):** abrir Ludus en dos pestañas con el mismo foco; al terminar, Progreso suma 10 XP una sola vez.
+8. **Detener y saltar:** detener un foco a la mitad → "Foco detenido…: no cuenta" (sin XP). En un descanso, "⏭ Saltar descanso" → se propone el foco.
+9. **Ajustes:** foco 200 → error en el campo y foco en él; 50 → "Guardado"; el foco en curso no cambia. "Pantalla encendida" aparece solo si el navegador la soporta (Chrome Android sí): con ella activa la pantalla no se apaga durante el foco.
+10. **Estadísticas y calendario:** tras completar focos, Estudio muestra hoy, la semana por día y el reparto por materia. En el Calendario, vista día, aparece "Estudio: Cálculo II" como bloque hecho (solo lectura), y en la barra de fichas, "Estudio → Bloque de estudio".
+11. **Sin conexión:** modo avión, recargar Estudio e iniciar un foco: funciona igual.
+

@@ -65,6 +65,19 @@ describe('almacén IndexedDB', () => {
     ).rejects.toThrow(/no declaró/);
   });
 
+  it('ocurridoEn explícito (ADR-0016): cuándo pasó de verdad; nunca en el futuro', async () => {
+    const e = await crearEntorno([notas([v1])]); // reloj: 2026-11-14T15:00:00Z
+    const almacen = e.almacen.paraModulo('notas');
+    const ev = await almacen.escribir(['notas'], async (tx) => tx.publicar('notas.NotaCreada', {}, { ocurridoEn: '2026-11-14T04:55:00-05:00' }));
+    expect(ev.ocurridoEn).toBe('2026-11-14T09:55:00.000Z');
+    const normal = await almacen.escribir(['notas'], async (tx) => tx.publicar('notas.NotaCreada', {}));
+    expect(normal.ocurridoEn).toBe('2026-11-14T15:00:00.000Z');
+    // El orden de entrega es el de publicación (id), no el de ocurridoEn.
+    expect(ev.id < normal.id).toBe(true);
+    await expect(almacen.escribir(['notas'], async (tx) => tx.publicar('notas.NotaCreada', {}, { ocurridoEn: '2026-11-14T15:00:01Z' }))).rejects.toThrow(/futuro/);
+    await expect(almacen.escribir(['notas'], async (tx) => tx.publicar('notas.NotaCreada', {}, { ocurridoEn: 'ayer' }))).rejects.toThrow(/inválido/);
+  });
+
   it('si la función falla, se deshacen los cambios Y los eventos (todo o nada)', async () => {
     const e = await crearEntorno([notas([v1])]);
     const almacen = e.almacen.paraModulo('notas');

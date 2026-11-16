@@ -4,6 +4,21 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado
 
 ## [Sin publicar]
 
+## [0.6.0] — 2026-11-15 · Iteración 5: Estudio (Pomodoro)
+
+### Agregado
+- **Módulo Estudio:** Pomodoro con foco, descanso corto y largo (25/5/15 cada 4, configurable de 5 a 90 min); pausar, reanudar, detener (no cuenta) y saltar descanso.
+- **Resistente a congelamiento:** el tiempo sale del reloj (inicio + duración + pausas), no de un contador. Al recargar o volver de una pantalla bloqueada, la fase figura terminada a la hora exacta y se registra una sola vez, aunque haya dos pestañas.
+- **Estudiar para** una materia o un trabajo de Universidad (por consulta; "ya no existe" o "sin materia" si falta).
+- **Aviso al terminar con la app visible:** tono (Web Audio), vibración y notificación. Mantener la pantalla encendida, opcional, donde el navegador lo permite. Tiempo restante en el título de la pestaña. La pantalla explica qué pasa con la app cerrada.
+- **Estadísticas:** hoy, la semana por día y el reparto por materia o trabajo, con barras propias.
+- **Calendario:** los focos completados aparecen como bloques hechos ("Estudio: Cálculo II"), y la ficha "Bloque de estudio" está en la barra lateral.
+- Tarjeta de Estudio en Inicio.
+- Núcleo: `tx.publicar(tipo, datos, { ocurridoEn })` para fechar un hecho cuando pasó de verdad (ADR-0016). Un Pomodoro que terminó a las 23:50 cuenta para ese día aunque se detecte a las 00:10.
+
+### Cambiado
+- RPG: tope provisional de 80 XP diarios para Pomodoros completados, hasta que lleguen los tramos (iteración 6).
+
 ## [0.5.1] — 2026-11-15 · Correcciones de la iteración 4 (Calendario)
 
 ### Corregido
