@@ -35,3 +35,4 @@ Opción 1. Un archivo por decisión, `NNNN-titulo-con-guiones.md`, con la planti
 | 0012 | Recurrencia e iCalendar (.ics) con código propio |
 | 0013 | Integración entre módulos por consulta: proveedores registrados (modifica 0009/0010) |
 | 0014 | XP por tipo de trabajo; notas y pesos como enteros (modifica 0005) |
+| 0015 | Fichas del calendario, color libre (#rrggbb legible) y vínculos entre módulos (amplía 0013; color: modifica 0007) |

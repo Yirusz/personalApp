@@ -132,7 +132,7 @@ stateDiagram-v2
 
 ## 3. Contexto Calendario
 
-**Lenguaje:** *Evento* (algo que el usuario agenda), *Serie* (evento recurrente), *Ocurrencia* (una aparición de la serie, identificada por su **fecha original**), *Excepción* (ocurrencia cancelada o modificada), *Elemento externo* (lo que aportan otros módulos: fuentes registradas, ADR-0013, o eventos con `datos.agenda`), *Recordatorio*, *Aviso* (un recordatorio vencido de una ocurrencia), *Bloque de compromiso*, *Revisión semanal*. Implementado en la iteración 2 (`web/src/modulos/calendario/`, ADR-0011 y ADR-0012).
+**Lenguaje:** *Evento* (algo que el usuario agenda), *Serie* (evento recurrente), *Ocurrencia* (una aparición de la serie, identificada por su **fecha original**), *Excepción* (ocurrencia cancelada o modificada), *Elemento externo* (lo que aportan otros módulos: fuentes registradas, ADR-0013, o eventos con `datos.agenda`), *Recordatorio*, *Aviso* (un recordatorio vencido de una ocurrencia), *Bloque de compromiso*, *Revisión semanal*, *Ficha* (plantilla para poner algo rápido: la aportan los módulos o el usuario), *Vínculo* (entidad de otro módulo a la que apunta un evento). Implementado en las iteraciones 2 y 4 (`web/src/modulos/calendario/`, ADR-0011, 0012 y 0015).
 
 ```mermaid
 classDiagram
@@ -143,7 +143,7 @@ classDiagram
     +Titulo titulo
     +string lugar
     +string notas
-    +ColorCategorico color
+    +ColorDeAgenda color
     +bool todoElDia
     +Intervalo inicio, fin
     +int[] recordatorios
@@ -151,6 +151,8 @@ classDiagram
     +Map~fecha, Excepcion~ excepciones
     +bool compromiso
     +fecha[] cumplidas
+    +Vinculo? vinculo
+    +string? ficha
     +editar(datos)
     +cancelarOcurrencia(fecha)
     +editarOcurrencia(fecha, datos)
@@ -184,20 +186,29 @@ classDiagram
     <<Agregado>>
     +SemanaIso semana
   }
+  class FichaPropia {
+    <<Agregado>>
+    +Titulo titulo
+    +ColorDeAgenda color
+    +int duracionMin
+    +unica|semanal(N) repeticion
+  }
   EventoDeCalendario *-- Recurrencia
   EventoDeCalendario *-- Excepcion
   EventoDeCalendario ..> Ocurrencia : se expande en un rango
+  FichaPropia ..> EventoDeCalendario : al ponerla crea
 ```
 
 | Tipo | Elementos |
 |---|---|
-| Agregados | `EventoDeCalendario` (con sus excepciones y cumplimientos), `RevisionSemanal` (id = semana ISO, p. ej. `2026-W47`) |
-| Value objects | `Intervalo` (con hora: instantes UTC, fin > inicio; todo el día: fechas `AAAA-MM-DD` sin zona, fin inclusivo ≥ inicio; ≤ 14 días), `Recurrencia` (intervalo 1–99, conteo 1–999, ≥ 1 día si es semanal), `Recordatorios` (0–5, de 0 min a 4 semanas antes), `SemanaIso` |
+| Agregados | `EventoDeCalendario` (con sus excepciones y cumplimientos), `RevisionSemanal` (id = semana ISO, p. ej. `2026-W47`), `FichaPropia` |
+| Value objects | `Intervalo` (con hora: instantes UTC, fin > inicio; todo el día: fechas `AAAA-MM-DD` sin zona, fin inclusivo ≥ inicio; ≤ 14 días), `Recurrencia` (intervalo 1–99, conteo 1–999, ≥ 1 día si es semanal), `Recordatorios` (0–5, de 0 min a 4 semanas antes), `SemanaIso`, `ColorDeAgenda` (token o `#rrggbb`, ADR-0015), `Vinculo {tipo, id}`, duración de ficha (15 min–8 h), semanas de ficha (1–52) |
 | Calculados (nunca se guardan) | `Ocurrencia`: la serie se expande solo para el rango visible, en hora civil de Bogotá. `Aviso`: momento = inicio − minutos. |
 | Proyecciones | `agenda`: suscripción `calendario.agenda` a `*` con historial completo; upsert por `<modulo>:<agenda.id>`, borra con `estado: "eliminado"`; los datos inválidos se omiten y se anotan en Diagnóstico. |
-| Invariantes | Intervalo válido. Semanal: la primera ocurrencia es el primer día elegido desde el inicio. Una excepción solo existe para una fecha que es ocurrencia; al editar la serie se descartan las que dejan de serlo. Bloque de compromiso: con hora, 15 min–8 h; se marca cumplido una vez por ocurrencia, desde que empieza hasta 48 h después de terminar. Una revisión por semana. Los elementos externos son de solo lectura. |
-| Eventos (v1) | `calendario.EventoCreado {eventoId, recurrente, compromiso}` · `EventoEditado {eventoId}` · `EventoEliminado {eventoId}` · `OcurrenciaModificada {eventoId, ocurrencia, accion: editada|cancelada|restaurada}` · `EventoMarcadoCumplido {eventoId, ocurrencia, ocurrenciaId, minutos}` · `CalendarioImportado {creados, actualizados}` · `SemanaPlanificada {semana}`. Los eventos propios **no** llevan `datos.agenda` (el Calendario no se proyecta a sí mismo). |
-| Fuentes | Cada fuente (propios, externos) se lee por separado: si una falla o tiene registros dañados, se muestra el resto con un aviso. |
+| Invariantes | Intervalo válido. Semanal: la primera ocurrencia es el primer día elegido desde el inicio. Una excepción solo existe para una fecha que es ocurrencia; al editar la serie se descartan las que dejan de serlo. Bloque de compromiso: con hora, 15 min–8 h; se marca cumplido una vez por ocurrencia, desde que empieza hasta 48 h después de terminar. Una revisión por semana. Los elementos externos son de solo lectura. Poner una ficha = crear un evento (semanal → serie de N semanas en ese día y hora, empezando en la media hora tocada); quitarla = eliminar el evento que creó (`ficha` coincide). Borrar una ficha no borra lo ya puesto. |
+| Eventos (v1) | `calendario.EventoCreado {eventoId, recurrente, compromiso}` · `EventoEditado {eventoId}` · `EventoEliminado {eventoId}` · `OcurrenciaModificada {eventoId, ocurrencia, accion: editada|cancelada|restaurada}` · `EventoMarcadoCumplido {eventoId, ocurrencia, ocurrenciaId, minutos}` · `CalendarioImportado {creados, actualizados}` · `SemanaPlanificada {semana}` · `FichaCreada/FichaEditada/FichaEliminada {fichaId}` (sin XP). `EventoCreado` lleva además `desdeFicha` desde la 0.5.0. Los eventos propios **no** llevan `datos.agenda` (el Calendario no se proyecta a sí mismo). |
+| Fuentes | Cada fuente (propios, externos, fuentes registradas) se lee por separado: si una falla o tiene registros dañados, se muestra el resto con un aviso. Igual con las fichas de cada módulo. |
+| Almacenamiento | Migración v2: almacén `fichas`. Los eventos guardados antes no cambian (`vinculo` y `ficha` ausentes = null). |
 
 ## 4. Contexto Estudio
 

@@ -83,3 +83,14 @@ El Service Worker exige HTTPS o `localhost`; `http://192.168.x.x` **no** sirve.
 7. **Calendario:** las entregas aparecen con el color de la materia, 🔒 y "de Universidad"; la entregada sale tachada con ✓; tocarla abre la ficha del trabajo. No hay duplicados.
 8. **Filtros, deshacer, sin conexión:** filtrar "Calificados", recargar → se conserva. Eliminar un trabajo → Deshacer. Archivar una materia → Deshacer (Ctrl+Z en escritorio). En modo avión, recargar y registrar/entregar: todo funciona.
 9. **Android:** el teclado numérico aparece en peso y nota; atrás vuelve de la ficha a la lista; los botones de subtarea (✕) se tocan sin errores.
+
+### Iteración 4 — Revisión del Calendario (guion de prueba manual, ~12 min por entorno)
+1. **Preparar:** en Universidad, crear "Cálculo II" (verde) y "Física I" (azul).
+2. **Fichas propias:** Calendario → Fichas → Gestionar → "Gimnasio", 1 hora, Solo una vez, color Otro (elige un amarillo claro). En tema claro debe verse oliva legible; en oscuro, amarillo.
+3. **Poner:** vista Semana de la próxima semana → "Fichas" → elegir "Cálculo II" → tocar lunes 7:00 y miércoles 7:00 → "Deshacer" aparece cada vez. Ir a la semana siguiente: las clases siguen ahí.
+4. **Quitar:** con "Cálculo II" activa, las clases puestas muestran ✕; tocar una → desaparece la serie; "Deshacer" la devuelve. "Listo" (o Esc) suelta la ficha.
+5. **Escritorio:** arrastrar la ficha "Gimnasio" a un hueco; arrastrar con el mouse de 14:00 a 16:00 en un día vacío → "Nuevo evento" con ese rango.
+6. **Formulario:** "+ Nuevo evento" → "Usar una ficha: Física I" → se llenan título, color, 2 h y repetición; guardar y abrir el evento → "Vinculado a: Física I" enlaza a Universidad.
+7. **360 px / Android:** la semana muestra 7 columnas sin desplazamiento horizontal; el "+" flotante crea; tocar el encabezado "L 16" abre el día; el mes muestra puntos de color.
+8. **Sin conexión:** modo avión, recargar y poner/quitar una ficha: funciona igual.
+9. Recordatorios e .ics: repetir los pasos 8 y 10 del guion de la iteración 2 (sin cambios).

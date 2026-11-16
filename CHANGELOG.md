@@ -4,6 +4,23 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado
 
 ## [Sin publicar]
 
+## [0.5.0] — 2026-11-15 · Iteración 4: revisión del Calendario
+
+### Agregado
+- **Fichas** (ADR-0015): en día y semana, el panel "Fichas" permite elegir una ficha y tocar un hueco para ponerla (en escritorio, también arrastrarla). Con la ficha activa, tocar lo que creó la quita. Todo con "Deshacer"; Esc suelta la ficha.
+- Universidad aporta una ficha por materia activa: **clase semanal** de 2 h durante 16 semanas, vinculada a la materia.
+- **Fichas propias** (pantalla Calendario → Fichas): título, color, duración y "solo una vez" o "cada semana durante N semanas".
+- Formulario de evento: **"Usar una ficha"** (llena título, color, duración y repetición) y **"Vincular a"** una materia, un trabajo u otra entidad de tus módulos; la ocurrencia muestra el vínculo con enlace.
+- **Color libre** (#rrggbb) además de la paleta, ajustado solo para verse bien en tema claro y oscuro.
+- Vistas tipo Google/Samsung: cabecera compacta (Hoy ‹ › título), botón flotante "+" en pantallas angostas, **semana de 7 columnas también en 360 px** (tocar un día abre su vista), tocar un hueco crea en esa media hora y arrastrar con el mouse marca el rango; la línea de "ahora" avanza sola.
+- Núcleo: `ColorDeAgenda`, lenguaje publicado de fichas y vínculos, `integraciones.fichas()` tolerante a fallos.
+
+### Corregido
+- Desbordamiento horizontal del calendario en 360 px.
+
+### Migración
+- Calendario v2 agrega el almacén de fichas propias; los eventos existentes no cambian.
+
 ## [0.4.0] — 2026-11-15 · Iteración 3: revisión de Universidad
 
 ### Agregado

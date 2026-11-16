@@ -1,6 +1,6 @@
 # ADR-0007: Nombre "Ludus" y estilo visual minimalista con temas intercambiables
 
-Estado: aceptado
+Estado: aceptado · color de elementos de agenda ampliado por ADR-0015 (hex legible)
 Fecha: 2026-11-14
 
 ## Contexto
