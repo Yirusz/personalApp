@@ -4,6 +4,22 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado
 
 ## [Sin publicar]
 
+## [0.5.1] — 2026-11-15 · Correcciones de la iteración 4 (Calendario)
+
+### Corregido
+- **Día, semana y mes no se mostraban sin eventos:** en su lugar salía "Aún no tienes eventos". Ahora las tres vistas se dibujan siempre, como en Google Calendar.
+
+### Cambiado
+- **Vistas como Google Calendar:**
+  - Día y semana: encabezado "LUN 16" (hoy en círculo), las 24 horas en un panel que llena la pantalla, bloques rellenos del color del evento con texto legible. Al abrir, la vista se coloca en lo primero del día o una hora antes de ahora.
+  - Mes: celdas grandes que llenan la pantalla, número arriba ("1 de nov" al empezar el mes). Los eventos de todo el día son barras rellenas y continuas entre días; los que tienen hora, punto + hora + título. "+N más" abre el día.
+- **Barra lateral de fichas** (abierta por defecto en pantallas anchas; franja arriba en el teléfono):
+  - Las fichas se **arrastran con el mouse o con el dedo** hasta el día y la semana, con una vista previa de dónde y a qué hora quedarán.
+  - Soltarlas en el mes abre ese día para elegir la hora.
+  - Tocar y luego tocar un hueco sigue funcionando.
+- **Color libre integrado, sin ventana emergente:** área de saturación y brillo (mouse, dedo o flechas), barra de tono, código hex, 12 colores rápidos y una muestra de cómo se verá.
+- Cabecera: en el teléfono el título va arriba completo; "Fichas" y ".ics" a la derecha.
+
 ## [0.5.0] — 2026-11-15 · Iteración 4: revisión del Calendario
 
 ### Agregado

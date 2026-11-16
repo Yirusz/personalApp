@@ -2,7 +2,7 @@
 
 > Punto de entrada para cualquier sesión nueva. Leer esto, luego `docs/adr/` y el código. Actualizar este archivo al cerrar cada iteración.
 
-**Estado (2026-11-15):** iteración 4 (revisión del Calendario: vistas, fichas, color libre y vínculos, ADR-0015) terminada. Versión `0.5.0`. Siguiente: iteración 5 — Estudio.
+**Estado (2026-11-15):** iteración 4 (revisión del Calendario: vistas, fichas, color libre y vínculos, ADR-0015) terminada. Versión `0.5.1` (correcciones de vistas, barra lateral de fichas y selector de color). Siguiente: iteración 5 — Estudio.
 
 ## 1. Decisiones tomadas (resumen)
 
@@ -85,6 +85,7 @@ Velocidad: iteración 1 = 15 puntos (+ ~3 de R1 adelantados); iteración 2 = ~46
 | Consultas a proveedores en cada render del rango (ADR-0013) | Una fuente lenta retrasa el calendario | Cada fuente es independiente (allSettled); cachear por rango si alguna llega a ser lenta |
 | Referencias guardadas por otros módulos pueden apuntar a trabajos borrados | Vínculo roto en Estudio/Notas | El consumidor resuelve por `ids` y muestra "no disponible" si falta |
 | Reabrir borra la nota y la fecha de entrega | Se pierde la nota anterior | Es deliberado (lo pidió la historia) y el aviso lo dice; queda en el registro de eventos |
+| Arrastre de fichas con Pointer Events: en la franja del teléfono arrastrar hacia abajo saca la ficha (deslizar de lado mueve la franja) | Gesto distinto según el ancho | Probado con eventos táctiles en Chrome; verificar en el A56 y la Tab S10 FE |
 | Fichas: quitar con la ficha activa borra toda la serie (con deshacer) | Si se quería quitar una sola semana | "Borrar solo esta" sigue en la ficha del evento; documentado en la ayuda del panel |
 | Panel de fichas sin teclado en la cuadrícula (los huecos no son enfocables) | Accesibilidad | Alternativa completa por teclado: "Nuevo evento" → "Usar una ficha" |
 | Color hex ajustado por mezcla en sRGB | Un hex muy saturado cambia un poco de tono en tema oscuro | Suficiente para marcas; OKLCH si molesta |

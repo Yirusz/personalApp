@@ -332,6 +332,31 @@ Escenario: Ficha propia
   Y eliminarla no borra lo que ya puse
 ```
 
+#### Correcciones 0.5.1 (pedidas por el usuario tras probar la 0.5.0)
+```gherkin
+Escenario: Las vistas existen aunque no haya eventos
+  Dado que no tengo eventos
+  Cuando elijo Día, Semana o Mes
+  Entonces veo la cuadrícula de horas del día, los 7 días de la semana o los días del mes
+
+Escenario: Mes como Google Calendar
+  Dado un evento de todo el día del 23 al 24 y una clase a las 7:00
+  Entonces el 23 y el 24 muestran una barra rellena continua y la clase aparece como "● 7:00 Cálculo II"
+
+Escenario: Arrastrar desde la barra lateral (mouse o dedo)
+  Cuando arrastro la ficha "Cálculo II" desde la barra lateral hasta el lunes 7:00
+  Entonces mientras la muevo veo dónde quedará ("7:00 a. m.") y al soltar se crea la clase semanal
+
+Escenario: Soltar en el mes
+  Cuando suelto una ficha sobre el viernes 20 en el mes
+  Entonces se abre el viernes 20 en vista día con la ficha lista para elegir la hora
+
+Escenario: Color sin ventanas emergentes
+  Cuando elijo "Otro" en Color
+  Entonces aparece en la misma página un área de saturación y brillo, una barra de tono, el código hex y colores rápidos
+  Y con el teclado puedo ajustar el área con las flechas
+```
+
 #### H9 — Usar fichas y vincular al crear · 3 pts · todas
 ```gherkin
 Escenario: Desde el formulario (también con teclado)

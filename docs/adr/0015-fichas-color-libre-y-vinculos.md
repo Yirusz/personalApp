@@ -29,6 +29,10 @@ Restricciones: el Calendario no puede conocer a Universidad (ADR-0010/0013), y l
 - **Universidad:** ofrece una ficha por materia activa (clase semanal de 2 h, 16 semanas, vinculada a la materia). Es un cambio **aditivo** en su archivo de proveedores (su API pública), justificado porque solo Universidad sabe qué es "una clase" de sus materias.
 - Por defecto, la ficha de una materia crea una **clase semanal** (elección del usuario); la duración y las semanas se editan después en el evento.
 
+## Corrección 0.5.1 (pedida por el usuario)
+- Las fichas viven en una **barra lateral** y se **arrastran** a la vista. Se usa Pointer Events y no la API de arrastrar de HTML, porque esta no funciona con el dedo en Android. En la barra vertical la ficha deja desplazar arriba/abajo (`touch-action: pan-y`) y arrastrar de lado la saca; en la franja del teléfono es al revés (`pan-x`). Soltar en el mes abre el día para elegir la hora.
+- El color libre se elige con un **selector integrado** (HSV en el dominio, `hexDesdeHsv`/`hsvDesdeHex`), sin el `<input type="color">` nativo, que abre una ventana emergente. Para las barras rellenas, `rellenoLegible` garantiza texto con contraste ≥ 4,5:1.
+
 ## Consecuencias
 - Estudio (Pomodoro) y otros módulos podrán ofrecer fichas sin tocar el Calendario.
 - Un evento creado con una ficha es un evento normal: editarlo no cambia la ficha y borrar la ficha no borra lo ya puesto.
